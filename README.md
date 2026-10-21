@@ -7,6 +7,7 @@ Carte isométrique de la France qui croise trois couches :
 | Prix du gazole (moyenne par cellule de 0,2°, prix de moins de 7 j) | data.economie.gouv.fr, flux instantané v2 | automatique, toutes les 15 min |
 | Signal médiatique de protestation (CAMEO 14, géolocalisé ville) | GDELT 2.0 | automatique, toutes les 15 min, fenêtre de 7 jours |
 | Comptages de participation | `data/participation.csv` | manuel |
+| Inflation sur un an (frise) : ensemble, alimentation, produits frais, énergie, produits pétroliers, 20 % les plus modestes | INSEE, IPC base 2025 (API SDMX ouverte) | automatique, mensuelle (vérifiée toutes les heures) |
 
 Sans fichier de données, la page affiche des couches de démonstration clairement signalées.
 
@@ -27,3 +28,16 @@ Modifie `data/participation.csv` directement sur GitHub (une ligne par ville et 
 python3 scripts/build_participation.py
 python3 -m http.server 8000   # puis http://localhost:8000
 ```
+
+## Séries temporelles (`data/series/*.json`)
+
+Chaque fichier suit le même format, lu par la frise en bas de page :
+
+```json
+{"id": "ipc", "titre": "...", "unite": "%", "frequence": "mensuelle", "portee": "...",
+ "source": {"label": "...", "url": "..."}, "methode": "...", "limites": "...", "updated": "...",
+ "lignes": [{"id": "ensemble", "label": "Ensemble", "idbank": "...", "url": "...", "calcul": null,
+             "points": [["2026-09", 3.1], ...]}]}
+```
+
+`calcul` est renseigné quand la valeur n'est pas publiée telle quelle par la source mais calculée par ÉCART.

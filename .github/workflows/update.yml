@@ -18,14 +18,20 @@ jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: Participation (CSV -> JSON)
         run: python scripts/build_participation.py
       - name: Événements GDELT
         run: python scripts/fetch_events.py || echo "GDELT indisponible, on garde l'ancien fichier"
+      # Mensuel : une requête par heure suffit, le fichier n'est réécrit que si l'INSEE publie
+      - name: Inflation INSEE
+        run: |
+          if [ "$(date +%M)" -lt 15 ] || [ "${{ github.event_name }}" != "schedule" ] || [ ! -f data/series/ipc.json ]; then
+            python scripts/fetch_ipc.py || echo "API INSEE indisponible, on garde l'ancien fichier"
+          fi
       # Une requête par run : le cron GitHub est trop irrégulier pour viser « une fois par heure »
       - name: Prix carburants
         run: python scripts/fetch_carburants.py || echo "API carburants indisponible, on garde l'ancien fichier"
@@ -33,7 +39,7 @@ jobs:
         run: |
           git config user.name "ecart-bot"
           git config user.email "ecart-bot@users.noreply.github.com"
-          git add data/*.json
+          git add data/*.json data/series/*.json
           git diff --cached --quiet && exit 0
           git commit -m "data: mise à jour $(date -u +%FT%H:%MZ)"
           git pull --rebase origin main   # au cas où le CSV a été modifié pendant le run
