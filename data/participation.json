@@ -1,0 +1,144 @@
+{
+ "mode": "manuel",
+ "updated": "2026-10-21T19:34+00:00",
+ "rows": [
+  {
+   "date": "2026-10-17",
+   "perimetre": "national",
+   "ville": "France",
+   "lat": null,
+   "lon": null,
+   "interieur": 550000,
+   "organisateurs": 800000,
+   "independant": null,
+   "source": {
+    "label": "Politis / ministère de l'Intérieur",
+    "url": "https://www.politis.fr/dossiers/17-octobre-macron-recolte-la-colere/"
+   }
+  },
+  {
+   "date": "2026-10-17",
+   "perimetre": "ville",
+   "ville": "Paris",
+   "lat": 48.8566,
+   "lon": 2.3522,
+   "interieur": 110000,
+   "organisateurs": null,
+   "independant": null,
+   "source": {
+    "label": "Hespress / AFP",
+    "url": "https://fr.hespress.com/492851-france-550-000-manifestants-en-france-dont-110-000-a-paris.html"
+   }
+  },
+  {
+   "date": "2026-10-17",
+   "perimetre": "ville",
+   "ville": "Lyon",
+   "lat": 45.764,
+   "lon": 4.8357,
+   "interieur": null,
+   "organisateurs": null,
+   "independant": null,
+   "source": null
+  },
+  {
+   "date": "2026-10-17",
+   "perimetre": "ville",
+   "ville": "Marseille",
+   "lat": 43.2965,
+   "lon": 5.3698,
+   "interieur": null,
+   "organisateurs": null,
+   "independant": null,
+   "source": null
+  },
+  {
+   "date": "2026-10-17",
+   "perimetre": "ville",
+   "ville": "Bordeaux",
+   "lat": 44.8378,
+   "lon": -0.5792,
+   "interieur": null,
+   "organisateurs": null,
+   "independant": null,
+   "source": null
+  },
+  {
+   "date": "2026-10-17",
+   "perimetre": "ville",
+   "ville": "Toulouse",
+   "lat": 43.6047,
+   "lon": 1.4442,
+   "interieur": null,
+   "organisateurs": null,
+   "independant": null,
+   "source": null
+  },
+  {
+   "date": "2026-10-17",
+   "perimetre": "ville",
+   "ville": "Nantes",
+   "lat": 47.2184,
+   "lon": -1.5536,
+   "interieur": null,
+   "organisateurs": null,
+   "independant": null,
+   "source": null
+  },
+  {
+   "date": "2026-10-17",
+   "perimetre": "ville",
+   "ville": "Lille",
+   "lat": 50.6292,
+   "lon": 3.0573,
+   "interieur": null,
+   "organisateurs": null,
+   "independant": null,
+   "source": null
+  },
+  {
+   "date": "2026-10-17",
+   "perimetre": "ville",
+   "ville": "Rennes",
+   "lat": 48.1173,
+   "lon": -1.6778,
+   "interieur": null,
+   "organisateurs": null,
+   "independant": null,
+   "source": null
+  },
+  {
+   "date": "2026-10-17",
+   "perimetre": "ville",
+   "ville": "Limoges",
+   "lat": 45.8336,
+   "lon": 1.2611,
+   "interieur": null,
+   "organisateurs": null,
+   "independant": null,
+   "source": null
+  },
+  {
+   "date": "2026-10-17",
+   "perimetre": "ville",
+   "ville": "Strasbourg",
+   "lat": 48.5734,
+   "lon": 7.7521,
+   "interieur": null,
+   "organisateurs": null,
+   "independant": null,
+   "source": null
+  },
+  {
+   "date": "2026-10-17",
+   "perimetre": "ville",
+   "ville": "Montpellier",
+   "lat": 43.6108,
+   "lon": 3.8767,
+   "interieur": null,
+   "organisateurs": null,
+   "independant": null,
+   "source": null
+  }
+ ]
+}

@@ -1,0 +1,40 @@
+name: Mise à jour des données
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"   # GDELT publie toutes les 15 min
+  workflow_dispatch:
+  push:
+    paths: ["data/participation.csv"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Participation (CSV -> JSON)
+        run: python scripts/build_participation.py
+      - name: Événements GDELT
+        run: python scripts/fetch_events.py || echo "GDELT indisponible, on garde l'ancien fichier"
+      # Une requête par run : le cron GitHub est trop irrégulier pour viser « une fois par heure »
+      - name: Prix carburants
+        run: python scripts/fetch_carburants.py || echo "API carburants indisponible, on garde l'ancien fichier"
+      - name: Commit
+        run: |
+          git config user.name "ecart-bot"
+          git config user.email "ecart-bot@users.noreply.github.com"
+          git add data/*.json
+          git diff --cached --quiet && exit 0
+          git commit -m "data: mise à jour $(date -u +%FT%H:%MZ)"
+          git pull --rebase origin main   # au cas où le CSV a été modifié pendant le run
+          git push

@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Observatoire Écart</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout : la carte isométrique occupe tout l'écran ; le HUD se pose aux coins, cadré comme un écran de contrôle ; ticker de données en bas */
+:root{
+  --void:#05080b; --panel:rgba(6,14,18,.78); --line:#17323d; --dim:#5f7d89; --ink:#d6f2fb;
+  --signal:#ffd400; --cyan:#3ae6ff; --alert:#ff4a3d; --ok:#5dff9b;
+  --f-disp:"Chakra Petch","Arial Narrow",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--void);color:var(--ink);font:12px/1.45 var(--f-mono);overflow:hidden;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+#deck{position:fixed;inset:0;width:100%;height:100%;filter:drop-shadow(0 0 5px rgba(58,230,255,.35))}
+/* scanlines + vignette */
+.fx{position:fixed;inset:0;pointer-events:none;z-index:2;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 1px,transparent 1px 3px),
+  radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.75) 100%)}
+.frame{position:fixed;inset:calc(env(safe-area-inset-top,0px) + 10px) max(10px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 34px) max(10px,env(safe-area-inset-left,0px));
+  pointer-events:none;z-index:2;
+  --c:var(--alert);
+  background:
+   linear-gradient(var(--c),var(--c)) top left/22px 1px no-repeat,linear-gradient(var(--c),var(--c)) top left/1px 22px no-repeat,
+   linear-gradient(var(--c),var(--c)) top right/22px 1px no-repeat,linear-gradient(var(--c),var(--c)) top right/1px 22px no-repeat,
+   linear-gradient(var(--c),var(--c)) bottom left/22px 1px no-repeat,linear-gradient(var(--c),var(--c)) bottom left/1px 22px no-repeat,
+   linear-gradient(var(--c),var(--c)) bottom right/22px 1px no-repeat,linear-gradient(var(--c),var(--c)) bottom right/1px 22px no-repeat}
+.hud{position:fixed;z-index:3;inset:calc(env(safe-area-inset-top,0px) + 22px) max(26px,calc(env(safe-area-inset-right,0px) + 16px)) calc(env(safe-area-inset-bottom,0px) + 46px) max(26px,calc(env(safe-area-inset-left,0px) + 16px));
+  display:grid;grid-template-columns:minmax(0,300px) 1fr minmax(0,260px);grid-template-rows:auto 1fr;gap:16px;pointer-events:none}
+.hud>*{pointer-events:auto;min-width:0}
+header{grid-column:1/-1;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+h1{margin:0;font:700 clamp(28px,4.4vw,52px)/.9 var(--f-disp);letter-spacing:.04em;color:var(--signal);text-shadow:0 0 18px rgba(255,212,0,.35)}
+h1 small{display:block;font:500 11px/1.4 var(--f-mono);letter-spacing:.18em;color:var(--dim);text-shadow:none;margin-top:8px;text-transform:uppercase}
+.clock{text-align:right;color:var(--dim);letter-spacing:.12em;text-transform:uppercase;font-variant-numeric:tabular-nums}
+.clock b{display:block;color:var(--cyan);font:500 20px var(--f-disp);letter-spacing:.08em}
+.panel{background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(3px);padding:14px;align-self:start;display:flex;flex-direction:column;gap:12px}
+.panel h2{margin:0;font:500 11px var(--f-mono);letter-spacing:.2em;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;gap:8px}
+.big{font:700 34px/1 var(--f-disp);color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.big em{font-style:normal;color:var(--alert)}
+.range{position:relative;height:22px;border:1px solid var(--line)}
+.range i{position:absolute;top:0;bottom:0;left:0}
+.range .a{background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
+.range .b{background:repeating-linear-gradient(135deg,var(--signal) 0 2px,transparent 2px 6px)}
+.ticks{display:flex;justify-content:space-between;color:var(--dim);font-size:10px;font-variant-numeric:tabular-nums}
+dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-variant-numeric:tabular-nums}
+dt{color:var(--dim);text-transform:uppercase;letter-spacing:.08em;font-size:10.5px;align-self:center}
+dd{margin:0;text-align:right}
+.sw{display:inline-block;width:10px;height:10px;margin-right:6px;vertical-align:-1px}
+.note{color:var(--dim);font-size:10.5px;margin:0}
+.note a,.src a{color:var(--cyan)}
+.layers{grid-column:3}
+.layer{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;cursor:pointer;padding:6px 0;border-top:1px solid var(--line)}
+.layer input{accent-color:var(--signal);margin:0;width:14px;height:14px}
+.layer input:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+.layer span{text-transform:uppercase;letter-spacing:.08em}
+.chip{font-size:9.5px;letter-spacing:.14em;padding:2px 6px;border:1px solid currentColor}
+.chip.live{color:var(--ok)} .chip.demo{color:var(--alert)} .chip.manuel{color:var(--signal)}
+.chip.live::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:currentColor;margin-right:5px;animation:blink 1.2s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
+.scale{height:8px;background:linear-gradient(90deg,#0f4a5a,var(--cyan),var(--signal),var(--alert))}
+.ticker{position:fixed;z-index:3;left:0;right:0;bottom:0;height:calc(28px + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px);
+  border-top:1px solid var(--line);background:#030506;overflow:hidden;display:flex;align-items:center;white-space:nowrap;color:var(--signal);letter-spacing:.12em;text-transform:uppercase;font-size:11px}
+.ticker div{display:inline-block;padding-left:100%;animation:tick 60s linear infinite}
+@keyframes tick{to{transform:translateX(-100%)}}
+.deck-tooltip{font:12px/1.4 var(--f-mono)!important}
+@media (prefers-reduced-motion:reduce){.ticker div{animation:none;padding-left:16px}.chip.live::before{animation:none}}
+@media (max-width:760px){
+  .hud{grid-template-columns:1fr;grid-template-rows:auto;align-content:start;overflow-y:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 40px)}
+  .layers{grid-column:1}
+  .panel{padding:10px}
+  .big{font-size:26px}
+  .gap{display:none}
+}
+</style>
+
+<canvas id="deck" aria-label="Carte isométrique de la France : prix des carburants, événements de protestation et participation"></canvas>
+<div class="fx"></div>
+<div class="frame"></div>
+
+<main class="hud">
+  <header>
+    <h1>ÉCART<small>Observatoire des chiffres de la mobilisation · France</small></h1>
+    <div class="clock">Heure locale<b id="clock">--:--:--</b><span id="maj">données : --</span></div>
+  </header>
+
+  <section class="panel" aria-labelledby="p-part">
+    <h2 id="p-part"><span>Participation</span><span id="pdate">--</span></h2>
+    <div>
+      <div class="big" id="ecart">--</div>
+      <p class="note">écart entre organisateurs et ministère de l'Intérieur</p>
+    </div>
+    <div>
+      <div class="range" aria-hidden="true"><i class="b" id="rb"></i><i class="a" id="ra"></i></div>
+      <div class="ticks"><span>0</span><span>250 k</span><span>500 k</span><span>750 k</span><span>1 M</span></div>
+    </div>
+    <dl id="pnat"></dl>
+    <p class="note" id="psrc"></p>
+  </section>
+
+  <div class="gap"></div>
+
+  <section class="panel layers" aria-labelledby="p-lay">
+    <h2 id="p-lay"><span>Couches</span><span>statut</span></h2>
+    <label class="layer"><input type="checkbox" id="l-fuel" checked><span>Prix gazole</span><em class="chip" id="s-fuel">--</em></label>
+    <label class="layer"><input type="checkbox" id="l-evt" checked><span>Protestations</span><em class="chip" id="s-evt">--</em></label>
+    <label class="layer"><input type="checkbox" id="l-part" checked><span>Comptages</span><em class="chip manuel" id="s-part">manuel</em></label>
+    <div>
+      <div class="scale"></div>
+      <div class="ticks"><span id="sc-lo">1,60 €</span><span>prix moyen / cellule</span><span id="sc-hi">2,00 €</span></div>
+    </div>
+    <dl>
+      <dt><span class="sw" style="background:var(--cyan)"></span>Intérieur</dt><dd>tige pleine</dd>
+      <dt><span class="sw" style="border:1px solid var(--signal)"></span>Organisateurs</dt><dd>tige filaire</dd>
+      <dt><span class="sw" style="border:1px solid var(--dim);border-radius:50%"></span>Sans chiffre</dt><dd>à renseigner</dd>
+      <dt><span class="sw" style="background:var(--alert);border-radius:50%"></span>Signal médiatique</dt><dd>GDELT, 7 j</dd>
+    </dl>
+    <p class="note" id="lnote"></p>
+    <p class="note src" id="lsrc"></p>
+  </section>
+</main>
+
+<div class="ticker" aria-hidden="true"><div id="tick">--</div></div>
+
+<script src="https://unpkg.com/deck.gl@8.9.35/dist.min.js"></script>
+<script>
+(() => {
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const C = {cyan:[58,230,255], signal:[255,212,0], alert:[255,74,61], dim:[95,125,137], ink:[214,242,251], line:[23,50,61]};
+const fmt = n => n == null ? '—' : n.toLocaleString('fr-FR');
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+const euro = p => p.toFixed(2).replace('.',',')+' €';
+
+// Contour simplifié de la France métropolitaine (lon, lat)
+const FR = [[-1.78,43.37],[-1.25,44.6],[-1.15,46.2],[-2.15,46.85],[-2.5,47.3],[-3.4,47.7],[-4.4,47.8],[-4.75,48.35],[-4.4,48.65],[-3.5,48.85],[-2.6,48.55],[-1.6,48.65],[-1.9,49.7],[-1.25,49.67],[-0.2,49.3],[0.2,49.72],[1.4,50.1],[1.6,50.9],[2.55,51.08],[3.2,50.75],[4.2,49.98],[4.85,50.15],[5.8,49.5],[6.4,49.46],[7.6,49.05],[8.2,48.97],[7.58,47.6],[7.0,47.47],[6.1,46.25],[6.8,46.4],[7.0,45.9],[6.65,45.1],[7.05,44.25],[7.52,43.79],[6.6,43.15],[5.3,43.2],[4.2,43.48],[3.1,43.05],[3.18,42.43],[1.72,42.5],[0.0,42.7],[-1.78,43.37]];
+const CORSE = [[8.6,42.95],[9.45,43.0],[9.55,42.1],[9.2,41.37],[8.75,41.6],[8.6,42.25],[8.6,42.95]];
+const inside = (p, poly) => { let c = false; for (let i=0,j=poly.length-1;i<poly.length;j=i++){ const [xi,yi]=poly[i],[xj,yj]=poly[j]; if(((yi>p[1])!==(yj>p[1])) && p[0]<(xj-xi)*(p[1]-yi)/(yj-yi)+xi) c=!c; } return c; };
+
+// --- Données de démonstration (remplacées par data/*.json en mode live) ---
+function demoFuel(){
+  const cells=[];
+  for(let lon=-5;lon<=9.6;lon+=0.2) for(let lat=41.2;lat<=51.2;lat+=0.2){
+    const p=[+lon.toFixed(2),+lat.toFixed(2)];
+    if(!inside(p,FR)&&!inside(p,CORSE)) continue;
+    const v=1.78+0.06*Math.sin(lon*1.3)+0.05*Math.cos(lat*1.7)+0.04*Math.sin((lon+lat)*2.1)+(inside(p,CORSE)?0.12:0);
+    cells.push([p[0],p[1],+v.toFixed(3),0]);
+  }
+  return {mode:'demo',carburant:'gazole',cells};
+}
+function demoEvents(cities){
+  let s=7; const r=()=>(s=(s*16807)%2147483647)/2147483647;
+  const ev=[]; cities.forEach(c=>{const n=2+Math.floor(r()*4); for(let k=0;k<n;k++) ev.push({lieu:c.ville+' (démo)',lon:c.lon+(r()-.5)*.5,lat:c.lat+(r()-.5)*.35,date:'—',url:''});});
+  return {mode:'demo',events:ev};
+}
+async function load(name){ try{ const r=await fetch('./data/'+name,{cache:'no-store'}); if(!r.ok) throw 0; return await r.json(); }catch(e){ return null; } }
+
+const state={fuel:null,evt:null,part:null,show:{fuel:true,evt:true,part:true},t:0};
+
+const SCALE={lo:1.6,hi:2.0}; // remplacé par p05 / p95 du flux live
+const norm=p=>Math.max(0,Math.min(1,(p-SCALE.lo)/(SCALE.hi-SCALE.lo)));
+function colorFor(p){
+  const x=norm(p); const stops=[[15,74,90],C.cyan,C.signal,C.alert];
+  const f=x*3,i=Math.min(2,Math.floor(f)),u=f-i,a=stops[i],b=stops[i+1];
+  return [0,1,2].map(k=>Math.round(a[k]+(b[k]-a[k])*u));
+}
+
+function layers(){
+  const L=[], D=deck;
+  L.push(new D.PathLayer({id:'fr',data:[{path:FR},{path:CORSE}],getPath:d=>d.path,getColor:[...C.cyan,200],widthMinPixels:1.2}));
+  const grat=[]; for(let x=-6;x<=10;x++) grat.push({s:[x,41],t:[x,51.6]}); for(let y=41;y<=51.6;y++) grat.push({s:[-6,y],t:[10,y]});
+  L.push(new D.LineLayer({id:'grat',data:grat,getSourcePosition:d=>d.s,getTargetPosition:d=>d.t,getColor:[...C.line,255],getWidth:1}));
+  if(state.show.fuel&&state.fuel) L.push(new D.ColumnLayer({id:'fuel',data:state.fuel.cells,diskResolution:4,angle:45,radius:8200,extruded:true,wireframe:true,filled:true,
+    getPosition:d=>[d[0],d[1]],getElevation:d=>norm(d[2])*40000,getFillColor:d=>[...colorFor(d[2]),70],getLineColor:d=>[...colorFor(d[2]),220],pickable:true}));
+  const cities=(state.part?.rows||[]).filter(r=>r.perimetre==='ville');
+  if(state.show.part){
+    const known=cities.filter(c=>c.interieur||c.organisateurs), unknown=cities.filter(c=>!c.interieur&&!c.organisateurs);
+    L.push(new D.ColumnLayer({id:'p-int',data:known.filter(c=>c.interieur),diskResolution:4,angle:45,radius:4500,extruded:true,
+      getPosition:d=>[d.lon,d.lat],getElevation:d=>d.interieur*2.2,getFillColor:[...C.cyan,235],pickable:true}));
+    L.push(new D.ColumnLayer({id:'p-org',data:known.filter(c=>c.organisateurs),diskResolution:4,angle:45,radius:7500,extruded:true,filled:false,wireframe:true,
+      getPosition:d=>[d.lon,d.lat],getElevation:d=>d.organisateurs*2.2,getLineColor:[...C.signal,255],pickable:true}));
+    L.push(new D.ScatterplotLayer({id:'p-na',data:unknown,stroked:true,filled:false,getPosition:d=>[d.lon,d.lat],getRadius:9000,radiusMinPixels:5,lineWidthMinPixels:1,getLineColor:[...C.dim,255],pickable:true}));
+    L.push(new D.TextLayer({id:'p-lbl',data:cities,getPosition:d=>[d.lon,d.lat,(d.organisateurs||d.interieur||0)*2.2+4000],getText:d=>d.ville.toUpperCase()+(d.interieur?'  '+fmt(d.interieur):''),
+      getSize:11,getColor:d=>d.interieur?[...C.ink,255]:[...C.dim,255],fontFamily:'IBM Plex Mono, monospace',characterSet:'auto',getTextAnchor:'start',getAlignmentBaseline:'bottom',getPixelOffset:[8,-4]}));
+  }
+  if(state.show.evt&&state.evt){
+    const t=state.t;
+    L.push(new D.ScatterplotLayer({id:'evt',data:state.evt.events,getPosition:d=>[d.lon,d.lat],getRadius:3500,radiusMinPixels:2.5,getFillColor:[...C.alert,255],pickable:true,
+      onClick:({object})=>{ if(object&&object.url) window.open(object.url,'_blank','noopener'); }}));
+    if(!RM) L.push(new D.ScatterplotLayer({id:'ping',data:state.evt.events,stroked:true,filled:false,getPosition:d=>[d.lon,d.lat],
+      getRadius:(d,{index})=>((t*0.35+index*0.137)%1)*26000,getLineColor:(d,{index})=>[...C.alert,Math.round(255*(1-((t*0.35+index*0.137)%1)))],
+      lineWidthMinPixels:1,updateTriggers:{getRadius:t,getLineColor:t}}));
+  }
+  return L;
+}
+
+function tooltip({object,layer}){
+  if(!object) return null;
+  const box={backgroundColor:'rgba(4,10,13,.92)',color:'#d6f2fb',border:'1px solid #17323d',padding:'8px 10px'};
+  if(layer.id==='fuel') return {html:`GAZOLE <b>${object[2].toFixed(3).replace('.',',')} €</b><br>${object[3]?object[3]+' stations':'donnée de démonstration'}`,style:box};
+  if(layer.id==='evt') return {html:`<b>${esc(object.lieu)}</b><br>${object.date.replace('T',' ').replace('Z',' UTC')}${object.precision?' · précision '+object.precision:''}${object.url?'<br>source : '+esc(new URL(object.url).hostname)+'<br><i>clic pour ouvrir l\'article</i>':''}`,style:box};
+  if(layer.id.startsWith('p-')) return {html:`<b>${object.ville.toUpperCase()}</b><br>Intérieur : ${fmt(object.interieur)}<br>Organisateurs : ${fmt(object.organisateurs)}<br>Indépendant : ${fmt(object.independant)}${object.source?'<br>'+object.source.label:''}`,style:box};
+  return null;
+}
+
+const view={longitude:2.6,latitude:45.2,zoom:5.1,pitch:52,bearing:-24};
+if(innerWidth<760) Object.assign(view,{zoom:4.4,latitude:44.6});
+const dg=new deck.Deck({canvas:'deck',initialViewState:view,controller:true,layers:[],getTooltip:tooltip});
+
+function chip(id,mode){ const el=document.getElementById(id); el.className='chip '+mode; el.textContent=mode==='live'?'live':mode==='demo'?'démo':mode; }
+
+function panels(){
+  const nat=(state.part?.rows||[]).find(r=>r.perimetre==='national');
+  if(nat){
+    const a=nat.interieur,b=nat.organisateurs;
+    document.getElementById('pdate').textContent=nat.date.split('-').reverse().slice(0,2).join('.');
+    document.getElementById('ecart').innerHTML=(a&&b)?`<em>+${Math.round((b/a-1)*100)} %</em> · ${fmt(b-a)}`:'—';
+    document.getElementById('ra').style.width=Math.min(100,(a||0)/1e4)+'%';
+    document.getElementById('rb').style.width=Math.min(100,(b||0)/1e4)+'%';
+    document.getElementById('pnat').innerHTML=`<dt><span class="sw" style="background:var(--cyan)"></span>Intérieur</dt><dd>${fmt(a)}</dd>
+      <dt><span class="sw" style="background:repeating-linear-gradient(135deg,var(--signal) 0 2px,transparent 2px 4px)"></span>Organisateurs</dt><dd>${fmt(b)}</dd>
+      <dt><span class="sw" style="border:1px solid var(--ok)"></span>Indépendant</dt><dd>${nat.independant?fmt(nat.independant):'non publié'}</dd>`;
+    if(nat.source) document.getElementById('psrc').innerHTML=`Source : <a href="${nat.source.url}" target="_blank" rel="noopener">${nat.source.label}</a>`;
+  }
+  chip('s-fuel',state.fuel.mode); chip('s-evt',state.evt.mode);
+  const demo=[state.fuel.mode==='demo'&&'prix',state.evt.mode==='demo'&&'événements'].filter(Boolean);
+  document.getElementById('lnote').textContent=demo.length?`Couches ${demo.join(' et ')} simulées : elles passent en live dès que le dépôt publie data/carburants.json et data/events.json.`:`Mise à jour automatique toutes les 15 min. Les points GDELT comptent des événements repérés dans la presse, pas des manifestations : Paris y est surreprésenté.`;
+  const st=state.fuel.stats;
+  document.getElementById('lsrc').innerHTML=[
+    state.fuel.source&&`Gazole : <a href="${state.fuel.source}" target="_blank" rel="noopener">data.economie.gouv.fr</a>${st?` · ${fmt(st.stations)} stations, prix de moins de 7 j`:''}`,
+    state.evt.source&&`Événements : <a href="${state.evt.source}" target="_blank" rel="noopener">GDELT 2.0</a>, CAMEO 14`].filter(Boolean).join('<br>');
+  const upd=[state.fuel.updated,state.evt.updated,state.part?.updated].filter(Boolean).sort().pop();
+  document.getElementById('maj').textContent='données : '+(upd?new Date(upd).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'}):'démo');
+  const known=(state.part?.rows||[]).filter(r=>r.perimetre==='ville'&&r.interieur);
+  const t=[nat&&nat.interieur&&nat.organisateurs&&`${nat.date.split('-').reverse().join('.')} // INTÉRIEUR ${fmt(nat.interieur)} // ORGANISATEURS ${fmt(nat.organisateurs)} // ÉCART +${Math.round((nat.organisateurs/nat.interieur-1)*100)} %`,
+    ...known.map(r=>`${r.ville} ${fmt(r.interieur)} (Intérieur)`),
+    `Comptage indépendant : non publié`,`Gazole : ${state.fuel.stats?'médiane '+euro(state.fuel.stats.mediane)+' (data.economie.gouv.fr)':'flux en attente (démo)'}`,`Signaux GDELT 7 j : ${state.evt.events.length}`].filter(Boolean);
+  document.getElementById('tick').textContent=t.join('   ▲   ');
+}
+
+function render(){ dg.setProps({layers:layers()}); }
+['fuel','evt','part'].forEach(k=>document.getElementById('l-'+k).addEventListener('change',e=>{state.show[k]=e.target.checked;render();}));
+setInterval(()=>{document.getElementById('clock').textContent=new Date().toLocaleTimeString('fr-FR');},1000);
+
+(async()=>{
+  const [p,f,e]=await Promise.all([load('participation.json'),load('carburants.json'),load('events.json')]);
+  state.part=p||{rows:[]};
+  state.fuel=(f&&f.cells&&f.cells.length)?f:demoFuel();
+  if(state.fuel.stats){ SCALE.lo=state.fuel.stats.p05; SCALE.hi=state.fuel.stats.p95; }
+  document.getElementById('sc-lo').textContent=euro(SCALE.lo); document.getElementById('sc-hi').textContent=euro(SCALE.hi);
+  const cities=state.part.rows.filter(r=>r.perimetre==='ville');
+  state.evt=(e&&e.events&&e.events.length)?e:demoEvents(cities);
+  panels(); render();
+  if(!RM){ const t0=performance.now(); const loop=now=>{state.t=(now-t0)/1000; render(); requestAnimationFrame(loop);}; requestAnimationFrame(loop); }
+})();
+})();
+</script>
