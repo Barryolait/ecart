@@ -8,6 +8,7 @@ Carte isométrique de la France qui croise trois couches :
 | Signal médiatique de protestation (CAMEO 14, géolocalisé ville) | GDELT 2.0 | automatique, toutes les 15 min, fenêtre de 7 jours |
 | Comptages de participation | `data/participation.csv` | manuel |
 | Inflation sur un an (frise) : ensemble, alimentation, produits frais, énergie, produits pétroliers, 20 % les plus modestes | INSEE, IPC base 2025 (API SDMX ouverte) | automatique, mensuelle (vérifiée toutes les heures) |
+| Gazole, historique : médiane et 1er–9e décile par jour (frise), médiane par département et par semaine (carte, pilotée par le curseur) | archives annuelles prix-carburants (donnees.roulez-eco.fr), depuis 2022 | automatique, une fois par jour |
 
 Sans fichier de données, la page affiche des couches de démonstration clairement signalées.
 
@@ -41,3 +42,15 @@ Chaque fichier suit le même format, lu par la frise en bas de page :
 ```
 
 `calcul` est renseigné quand la valeur n'est pas publiée telle quelle par la source mais calculée par ÉCART.
+
+## Historique du gazole
+
+`scripts/fetch_carburants_historique.py` recalcule chaque jour l'année en cours (l'année précédente sert d'amorce)
+et la fusionne avec l'historique déjà publié. Recalcul complet depuis 2022, en local :
+
+```bash
+python3 scripts/fetch_carburants_historique.py --depuis 2022
+```
+
+Les contours des départements (`data/departements.geojson`, Etalab, Licence Ouverte) se régénèrent avec
+`python3 scripts/build_departements.py 2026`.

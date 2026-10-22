@@ -32,6 +32,12 @@ jobs:
           if [ "$(date +%M)" -lt 15 ] || [ "${{ github.event_name }}" != "schedule" ] || [ ! -f data/series/ipc.json ]; then
             python scripts/fetch_ipc.py || echo "API INSEE indisponible, on garde l'ancien fichier"
           fi
+      # Archive quotidienne (~30 Mo, mise à jour le soir) : un calcul par jour suffit
+      - name: Historique gazole
+        run: |
+          if [ "$(python -c 'import json;print(json.load(open("data/series/gazole.json"))["updated"][:10])' 2>/dev/null)" != "$(date -u +%F)" ]; then
+            python scripts/fetch_carburants_historique.py || echo "Archive carburants indisponible, on garde l'ancien historique"
+          fi
       # Une requête par run : le cron GitHub est trop irrégulier pour viser « une fois par heure »
       - name: Prix carburants
         run: python scripts/fetch_carburants.py || echo "API carburants indisponible, on garde l'ancien fichier"

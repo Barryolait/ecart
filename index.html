@@ -31,7 +31,7 @@ body{background:var(--void);color:var(--ink);font:12px/1.45 var(--f-mono);overfl
    linear-gradient(var(--c),var(--c)) bottom left/22px 1px no-repeat,linear-gradient(var(--c),var(--c)) bottom left/1px 22px no-repeat,
    linear-gradient(var(--c),var(--c)) bottom right/22px 1px no-repeat,linear-gradient(var(--c),var(--c)) bottom right/1px 22px no-repeat}
 .hud{position:fixed;z-index:3;inset:calc(env(safe-area-inset-top,0px) + 22px) max(26px,calc(env(safe-area-inset-right,0px) + 16px)) calc(env(safe-area-inset-bottom,0px) + 46px) max(26px,calc(env(safe-area-inset-left,0px) + 16px));
-  display:grid;grid-template-columns:minmax(0,300px) 1fr minmax(0,260px);grid-template-rows:auto 1fr auto;gap:16px;pointer-events:none}
+  display:grid;grid-template-columns:minmax(0,300px) 1fr minmax(0,260px);grid-template-rows:auto minmax(0,1fr) auto;gap:16px;pointer-events:none}
 .hud>*{pointer-events:auto;min-width:0}
 header{grid-column:1/-1;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
 h1{margin:0;font:700 clamp(28px,4.4vw,52px)/.9 var(--f-disp);letter-spacing:.04em;color:var(--signal);text-shadow:0 0 18px rgba(255,212,0,.35)}
@@ -54,12 +54,13 @@ dd{margin:0;text-align:right}
 .note{color:var(--dim);font-size:10.5px;margin:0}
 .note a,.src a{color:var(--cyan)}
 .layers{grid-column:3}
+.hud>.panel:not(.frise){max-height:100%;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
 .layer{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;cursor:pointer;padding:6px 0;border-top:1px solid var(--line)}
 .layer input{accent-color:var(--signal);margin:0;width:14px;height:14px}
 .layer input:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
 .layer span{text-transform:uppercase;letter-spacing:.08em}
 .chip{font-size:9.5px;letter-spacing:.14em;padding:2px 6px;border:1px solid currentColor}
-.chip.live{color:var(--ok)} .chip.demo{color:var(--alert)} .chip.manuel{color:var(--signal)}
+.chip.live{color:var(--ok)} .chip.demo{color:var(--alert)} .chip.manuel{color:var(--signal)} .chip.archive{color:var(--cyan)}
 .chip.live::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:currentColor;margin-right:5px;animation:blink 1.2s steps(2) infinite}
 @keyframes blink{50%{opacity:0}}
 .scale{height:8px;background:linear-gradient(90deg,#0f4a5a,var(--cyan),var(--signal),var(--alert))}
@@ -68,7 +69,7 @@ dd{margin:0;text-align:right}
 .ticker div{display:inline-block;padding-left:100%;animation:tick 60s linear infinite}
 @keyframes tick{to{transform:translateX(-100%)}}
 /* Frise temporelle : bandeau pleine largeur sous la carte, courbes fines, curseur de date commun */
-.frise{grid-column:1/-1;align-self:end;gap:8px}
+.frise{grid-column:1/-1;align-self:end;gap:4px;padding:10px 14px}
 .frise .row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px}
 .frise h2{flex:1 1 auto}
 .seg{display:flex;border:1px solid var(--line)}
@@ -79,10 +80,18 @@ dd{margin:0;text-align:right}
 .leg button i{display:inline-block;width:14px;height:2px;background:currentColor}
 .leg button[aria-pressed=false]{opacity:.38}
 .leg button[aria-pressed=false] i{background:none;border-top:1px dashed currentColor}
-.seg button:focus-visible,.leg button:focus-visible,#fsvg:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
-.fwrap{position:relative}
-#fsvg{display:block;width:100%;height:118px;cursor:crosshair;touch-action:pan-y}
-#fsvg text{font:10px var(--f-mono);fill:var(--dim)}
+.seg button:focus-visible,.leg button:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+.fwrap{position:relative;cursor:crosshair;touch-action:pan-y}
+.fwrap:focus-visible{outline:2px solid var(--signal);outline-offset:4px}
+.fhead{display:flex;flex-wrap:wrap;align-items:center;gap:2px 12px;margin-top:4px}
+.fhead h3{margin:0;font:500 10px var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.fhead sup{font-size:7px}
+.fsvg{display:block;width:100%;height:78px}
+.fsvg.small{height:54px}
+.fsvg text{font:10px var(--f-mono);fill:var(--dim)}
+.now{font:500 10px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ok);background:none;border:1px solid currentColor;padding:4px 8px;cursor:pointer}
+.now:disabled{color:var(--dim);border-color:var(--line);cursor:default}
+.now:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
 .read{display:flex;flex-wrap:wrap;gap:2px 14px;font-variant-numeric:tabular-nums;min-height:18px}
 .read b{color:var(--signal);font-weight:500;letter-spacing:.08em}
 .read span{display:inline-flex;align-items:center;gap:6px;min-width:0}
@@ -96,11 +105,12 @@ dd{margin:0;text-align:right}
 @media (max-width:760px){
   .hud{grid-template-columns:1fr;grid-template-rows:auto;align-content:start;overflow-y:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 40px)}
   .layers{grid-column:1}
+  .hud>.panel:not(.frise){max-height:none;overflow:visible}
   .panel{padding:10px}
   .big{font-size:26px}
   .gap{display:none}
   .frise{grid-column:1}
-  #fsvg{height:140px}
+  .fsvg{height:110px} .fsvg.small{height:80px}
 }
 </style>
 
@@ -137,7 +147,7 @@ dd{margin:0;text-align:right}
     <label class="layer"><input type="checkbox" id="l-part" checked><span>Comptages</span><em class="chip manuel" id="s-part">manuel</em></label>
     <div>
       <div class="scale"></div>
-      <div class="ticks"><span id="sc-lo">1,60 €</span><span>prix moyen / cellule</span><span id="sc-hi">2,00 €</span></div>
+      <div class="ticks"><span id="sc-lo">1,60 €</span><span id="sc-lbl">moy. / cellule</span><span id="sc-hi">2,00 €</span></div>
     </div>
     <dl>
       <dt><span class="sw" style="background:var(--cyan)"></span>Intérieur</dt><dd>tige pleine</dd>
@@ -151,15 +161,20 @@ dd{margin:0;text-align:right}
 
   <section class="panel frise" aria-labelledby="p-frise">
     <div class="row">
-      <h2 id="p-frise"><span>Frise · inflation sur un an</span></h2>
+      <h2 id="p-frise"><span>Frise</span></h2>
       <div class="seg" role="group" aria-label="Période affichée">
-        <button type="button" data-y="5" aria-pressed="true">5 ans</button><button type="button" data-y="10" aria-pressed="false">10 ans</button><button type="button" data-y="0" aria-pressed="false">depuis 1997</button>
+        <button type="button" data-y="1" aria-pressed="false">1 an</button><button type="button" data-y="5" aria-pressed="true">5 ans</button><button type="button" data-y="0" aria-pressed="false">depuis 1997</button>
       </div>
+      <button type="button" class="now" id="fnow" disabled>▶ maintenant</button>
     </div>
-    <div class="leg" id="fleg" role="group" aria-label="Séries affichées"></div>
-    <div class="fwrap"><svg id="fsvg" tabindex="0" role="img" aria-label="Courbes d'inflation sur un an ; flèches gauche et droite pour déplacer le curseur"></svg></div>
     <div class="read" id="fread" aria-live="polite"></div>
-    <details><summary>Méthode, limites, sources</summary><p id="fmeth"></p></details>
+    <div class="fwrap" id="fwrap" tabindex="0" role="group" aria-label="Frise temporelle : cliquer ou glisser pour choisir une date. Flèches : un jour ; Maj + flèches : un mois ; Fin : maintenant">
+      <div class="fhead"><h3>Inflation sur un an</h3><div class="leg" id="fleg" role="group" aria-label="Séries d'inflation affichées"></div></div>
+      <svg id="fsvg-ipc" class="fsvg" aria-hidden="true"></svg>
+      <div class="fhead"><h3>Gazole, €/L · médiane et 1<sup>er</sup>–9<sup>e</sup> décile des stations</h3></div>
+      <svg id="fsvg-gaz" class="fsvg small" aria-hidden="true"></svg>
+    </div>
+    <details><summary>Méthode, limites, sources</summary><p id="fmeth-ipc"></p><p id="fmeth-gaz"></p></details>
   </section>
 </main>
 
@@ -173,6 +188,7 @@ const C = {cyan:[58,230,255], signal:[255,212,0], alert:[255,74,61], dim:[95,125
 const fmt = n => n == null ? '—' : n.toLocaleString('fr-FR');
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
 const euro = p => p.toFixed(2).replace('.',',')+' €';
+const frDate = iso => iso.split('-').reverse().join('.');
 
 // Contour simplifié de la France métropolitaine (lon, lat)
 const FR = [[-1.78,43.37],[-1.25,44.6],[-1.15,46.2],[-2.15,46.85],[-2.5,47.3],[-3.4,47.7],[-4.4,47.8],[-4.75,48.35],[-4.4,48.65],[-3.5,48.85],[-2.6,48.55],[-1.6,48.65],[-1.9,49.7],[-1.25,49.67],[-0.2,49.3],[0.2,49.72],[1.4,50.1],[1.6,50.9],[2.55,51.08],[3.2,50.75],[4.2,49.98],[4.85,50.15],[5.8,49.5],[6.4,49.46],[7.6,49.05],[8.2,48.97],[7.58,47.6],[7.0,47.47],[6.1,46.25],[6.8,46.4],[7.0,45.9],[6.65,45.1],[7.05,44.25],[7.52,43.79],[6.6,43.15],[5.3,43.2],[4.2,43.48],[3.1,43.05],[3.18,42.43],[1.72,42.5],[0.0,42.7],[-1.78,43.37]];
@@ -199,7 +215,10 @@ async function load(name){ try{ const r=await fetch('./data/'+name,{cache:'no-st
 
 const state={fuel:null,evt:null,part:null,show:{fuel:true,evt:true,part:true},t:0};
 
-const SCALE={lo:1.6,hi:2.0}; // remplacé par p05 / p95 du flux live
+// Échelle live : p05 / p95 du flux du jour. Échelle archive : p05 / p95 de tout l'historique,
+// fixe pour que les couleurs restent comparables d'une semaine à l'autre.
+const SCALE_LIVE={lo:1.6,hi:2.0}, SCALE_HIST={lo:1.6,hi:2.0};
+let SCALE=SCALE_LIVE;
 const norm=p=>Math.max(0,Math.min(1,(p-SCALE.lo)/(SCALE.hi-SCALE.lo)));
 function colorFor(p){
   const x=norm(p); const stops=[[15,74,90],C.cyan,C.signal,C.alert];
@@ -212,7 +231,14 @@ function layers(){
   L.push(new D.PathLayer({id:'fr',data:[{path:FR},{path:CORSE}],getPath:d=>d.path,getColor:[...C.cyan,200],widthMinPixels:1.2}));
   const grat=[]; for(let x=-6;x<=10;x++) grat.push({s:[x,41],t:[x,51.6]}); for(let y=41;y<=51.6;y++) grat.push({s:[-6,y],t:[10,y]});
   L.push(new D.LineLayer({id:'grat',data:grat,getSourcePosition:d=>d.s,getTargetPosition:d=>d.t,getColor:[...C.line,255],getWidth:1}));
-  if(state.show.fuel&&state.fuel) L.push(new D.ColumnLayer({id:'fuel',data:state.fuel.cells,diskResolution:4,angle:45,radius:8200,extruded:true,wireframe:true,filled:true,
+  if(state.week===-1){ /* curseur avant le début de l'archive : pas de couche gazole */ }
+  else if(state.show.fuel&&state.week!=null){ const w=state.week, vals=state.hist.deps;
+    L.push(new D.GeoJsonLayer({id:'fuel-dep',data:state.depGeo,extruded:true,wireframe:true,filled:true,
+      getElevation:f=>{const v=vals[f.properties.code]?.[w]; return v==null?0:norm(v)*40000;},
+      getFillColor:f=>{const v=vals[f.properties.code]?.[w]; return v==null?[...C.dim,25]:[...colorFor(v),70];},
+      getLineColor:f=>{const v=vals[f.properties.code]?.[w]; return v==null?[...C.dim,120]:[...colorFor(v),220];},
+      lineWidthMinPixels:1,pickable:true,updateTriggers:{getElevation:w,getFillColor:w,getLineColor:w}}));
+  } else if(state.show.fuel&&state.fuel) L.push(new D.ColumnLayer({id:'fuel',data:state.fuel.cells,diskResolution:4,angle:45,radius:8200,extruded:true,wireframe:true,filled:true,
     getPosition:d=>[d[0],d[1]],getElevation:d=>norm(d[2])*40000,getFillColor:d=>[...colorFor(d[2]),70],getLineColor:d=>[...colorFor(d[2]),220],pickable:true}));
   const cities=(state.part?.rows||[]).filter(r=>r.perimetre==='ville');
   if(state.show.part){
@@ -239,6 +265,8 @@ function layers(){
 function tooltip({object,layer}){
   if(!object) return null;
   const box={backgroundColor:'rgba(4,10,13,.92)',color:'#d6f2fb',border:'1px solid #17323d',padding:'8px 10px'};
+  if(layer.id==='fuel-dep'){ const v=state.hist.deps[object.properties.code]?.[state.week];
+    return {html:`<b>${esc(object.properties.nom.toUpperCase())}</b><br>GAZOLE, MÉDIANE <b>${v==null?'non publiée (moins de 5 stations)':v.toFixed(3).replace('.',',')+' €'}</b><br>semaine du ${frDate(state.hist.semaines[state.week])}<br>archives prix-carburants.gouv.fr`,style:box}; }
   if(layer.id==='fuel') return {html:`GAZOLE <b>${object[2].toFixed(3).replace('.',',')} €</b><br>${object[3]?object[3]+' stations':'donnée de démonstration'}`,style:box};
   if(layer.id==='evt') return {html:`<b>${esc(object.lieu)}</b><br>${object.date.replace('T',' ').replace('Z',' UTC')}${object.precision?' · précision '+object.precision:''}${object.url?'<br>source : '+esc(new URL(object.url).hostname)+'<br><i>clic pour ouvrir l\'article</i>':''}`,style:box};
   if(layer.id.startsWith('p-')) return {html:`<b>${object.ville.toUpperCase()}</b><br>Intérieur : ${fmt(object.interieur)}<br>Organisateurs : ${fmt(object.organisateurs)}<br>Indépendant : ${fmt(object.independant)}${object.source?'<br>'+object.source.label:''}`,style:box};
@@ -281,15 +309,36 @@ function panels(){
 }
 
 function render(){ dg.setProps({layers:layers()}); }
+
+// Le curseur de la frise pilote la couche gazole : « maintenant » = flux live, sinon médiane départementale de la semaine
+state.week=null;
+function fuelMode(){
+  const hist=state.week!=null;
+  SCALE=hist?SCALE_HIST:SCALE_LIVE;
+  document.getElementById('sc-lo').textContent=euro(SCALE.lo); document.getElementById('sc-hi').textContent=euro(SCALE.hi);
+  const before=state.week===-1;
+  document.getElementById('sc-lbl').textContent=before?`archive dès ${frDate(state.hist.semaines[0])}`:hist?`sem. ${frDate(state.hist.semaines[state.week])}`:'moy. / cellule';
+  if(hist){ const el=document.getElementById('s-fuel'); el.className='chip archive'; el.textContent=before?'hors archive':'archive'; }
+  else if(state.fuel) chip('s-fuel',state.fuel.mode);
+}
+window.ECART_MAP={setDate(iso,now){
+  let w=null;
+  if(!now&&state.hist){ const S=state.hist.semaines; w=-1; for(let i=S.length-1;i>=0;i--) if(S[i]<=iso){ w=i; break; } }
+  if(w===state.week) return;
+  state.week=w; fuelMode(); render();
+}};
 ['fuel','evt','part'].forEach(k=>document.getElementById('l-'+k).addEventListener('change',e=>{state.show[k]=e.target.checked;render();}));
 setInterval(()=>{document.getElementById('clock').textContent=new Date().toLocaleTimeString('fr-FR');},1000);
 
 (async()=>{
-  const [p,f,e]=await Promise.all([load('participation.json'),load('carburants.json'),load('events.json')]);
+  const [p,f,e,hist,geo]=await Promise.all([load('participation.json'),load('carburants.json'),load('events.json'),load('carburants_departements.json'),load('departements.geojson')]);
+  if(hist&&geo){ state.hist=hist; state.depGeo=geo;
+    const all=Object.values(hist.deps).flat().filter(v=>v!=null).sort((a,b)=>a-b);
+    SCALE_HIST.lo=all[Math.floor(all.length*.05)]; SCALE_HIST.hi=all[Math.floor(all.length*.95)]; }
   state.part=p||{rows:[]};
   state.fuel=(f&&f.cells&&f.cells.length)?f:demoFuel();
-  if(state.fuel.stats){ SCALE.lo=state.fuel.stats.p05; SCALE.hi=state.fuel.stats.p95; }
-  document.getElementById('sc-lo').textContent=euro(SCALE.lo); document.getElementById('sc-hi').textContent=euro(SCALE.hi);
+  if(state.fuel.stats){ SCALE_LIVE.lo=state.fuel.stats.p05; SCALE_LIVE.hi=state.fuel.stats.p95; }
+  fuelMode();
   const cities=state.part.rows.filter(r=>r.perimetre==='ville');
   state.evt=(e&&e.events&&e.events.length)?e:demoEvents(cities);
   panels(); render();
@@ -298,108 +347,190 @@ setInterval(()=>{document.getElementById('clock').textContent=new Date().toLocal
 })();
 </script>
 <script>
-// Frise temporelle : lit data/series/*.json (format commun), un curseur de date partagé
+// Frise temporelle : lit data/series/*.json (format commun) sur un axe en jours.
+// Deux graphes séparés (jamais deux unités sur un même axe), un curseur de date commun
+// qui pilote la carte : « maintenant » = couches live, une autre date = archives.
 (() => {
-const NS='http://www.w3.org/2000/svg';
-// Couleur fixe par série (validée en séparation daltonisme sur fond #05080b), jamais par rang
-const COL={ensemble:'#ffffff',energie:'#ff4a3d',alimentation:'#3ae6ff',q1:'#ffd400',frais:'#5dff9b',petroliers:'#c58bff'};
+const NS='http://www.w3.org/2000/svg', DAY=864e5;
+// Couleur fixe par série (validée en séparation daltonisme sur fond #05080b), jamais par rang.
+// Le gazole reprend la teinte des produits pétroliers : même famille.
+const COL={ensemble:'#ffffff',energie:'#ff4a3d',alimentation:'#3ae6ff',q1:'#ffd400',frais:'#5dff9b',petroliers:'#c58bff',gazole:'#c58bff'};
 const DEFAULT_ON=['ensemble','energie','alimentation','q1'];
+const M={l:46,r:8};  // marges horizontales communes : les deux graphes partagent le même axe x
+const ms=iso=>Date.parse(iso.length===7?iso+'-15':iso);
+const isoDay=t=>new Date(t).toISOString().slice(0,10);
 const pct=v=>v==null?'—':(v>0?'+':'')+v.toLocaleString('fr-FR',{minimumFractionDigits:1,maximumFractionDigits:1})+' %';
-const mois=t=>new Date(t+'-15').toLocaleDateString('fr-FR',{month:'short',year:'numeric'});
+const eur=(v,d=3)=>v==null?'—':v.toFixed(d).replace('.',',')+' €';
+const mois=t=>new Date(ms(t)).toLocaleDateString('fr-FR',{month:'short',timeZone:'UTC'});
+const court=iso=>new Date(ms(iso)).toLocaleDateString('fr-FR',{day:'numeric',month:'short',timeZone:'UTC'});
+const jour=iso=>new Date(ms(iso)).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});
 const el=(tag,attrs={},parent)=>{const n=document.createElementNS(NS,tag);for(const k in attrs)n.setAttribute(k,attrs[k]);parent&&parent.appendChild(n);return n;};
-const svg=document.getElementById('fsvg'), leg=document.getElementById('fleg'), read=document.getElementById('fread');
-const F={doc:null,marks:[],years:5,on:new Set(DEFAULT_ON),cursor:null,months:[]};
-window.ECART_FRISE=F; // le curseur pourra piloter les couches datées de la carte
+const $=id=>document.getElementById(id);
+const wrap=$('fwrap'), svgI=$('fsvg-ipc'), svgG=$('fsvg-gaz'), leg=$('fleg'), read=$('fread'), nowBtn=$('fnow');
+const F={ipc:null,gaz:null,marks:[],years:5,on:new Set(DEFAULT_ON),cursor:null,hover:null,now:null,t0:0,t1:0};
+window.ECART_FRISE=F;
 
 async function load(path){ try{ const r=await fetch(path,{cache:'no-store'}); if(!r.ok) throw 0; return await r.json(); }catch(e){ return null; } }
-
-function lines(){ return F.doc.lignes.filter(l=>COL[l.id]); }
+const ipcLines=()=>F.ipc?F.ipc.lignes.filter(l=>COL[l.id]):[];
+const gazLine=id=>F.gaz?.lignes.find(l=>l.id===id);
 
 function legend(){
   leg.textContent='';
-  for(const l of lines()){
+  for(const l of ipcLines()){
     const b=document.createElement('button'); b.type='button'; b.style.color=COL[l.id];
     b.setAttribute('aria-pressed',F.on.has(l.id));
-    const i=document.createElement('i'); const t=document.createElement('span'); t.textContent=l.label; t.style.color='var(--ink)';
+    const i=document.createElement('i'), t=document.createElement('span'); t.textContent=l.label; t.style.color='var(--ink)';
     b.append(i,t);
     b.onclick=()=>{ F.on.has(l.id)?F.on.delete(l.id):F.on.add(l.id); legend(); draw(); };
     leg.appendChild(b);
   }
 }
 
-function draw(){
-  const W=svg.clientWidth||600, H=svg.clientHeight||118, m={l:34,r:8,t:8,b:16};
-  svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.textContent='';
-  const all=lines(), vis=all.filter(l=>F.on.has(l.id));
-  // l'axe va jusqu'au mois courant : l'IPC est publié avec un mois de retard, les repères récents restent visibles
-  const now=new Date(), cur=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  const last=[cur,...F.marks.map(mk=>mk.date.slice(0,7))].reduce((a,k)=>k>a?k:a,'');
-  const lastData=all.reduce((a,l)=>l.points.length&&l.points.at(-1)[0]>a?l.points.at(-1)[0]:a,'');
-  const from=F.years?`${+last.slice(0,4)-F.years}${last.slice(4)}`:'1997-01';
-  const months=[]; for(let y=+from.slice(0,4),mo=+from.slice(5);`${y}-${String(mo).padStart(2,'0')}`<=last;mo++){ if(mo>12){mo=1;y++;} const k=`${y}-${String(mo).padStart(2,'0')}`; if(k>last) break; months.push(k); }
-  F.months=months;
-  const val=new Map(all.map(l=>[l.id,new Map(l.points)]));
-  let lo=0,hi=0; for(const l of vis) for(const k of months){ const v=val.get(l.id).get(k); if(v!=null){ lo=Math.min(lo,v); hi=Math.max(hi,v); } }
-  const step=[1,2,5,10,20,25,50].find(s=>(hi-lo)/s<=4)||50; lo=Math.floor(lo/step)*step; hi=Math.ceil(hi/step)*step||step;
-  const x=i=>m.l+(W-m.l-m.r)*i/Math.max(1,months.length-1), y=v=>m.t+(H-m.t-m.b)*(hi-v)/(hi-lo);
-  // grille et axes, récessifs
-  for(let v=lo;v<=hi;v+=step){
-    el('line',{x1:m.l,x2:W-m.r,y1:y(v),y2:y(v),stroke:v===0?'#5f7d89':'#17323d','stroke-width':1,'stroke-dasharray':v===0?'':'2 3'},svg);
-    el('text',{x:m.l-6,y:y(v)+3,'text-anchor':'end'},svg).textContent=(v>0?'+':'')+v+' %';
-  }
-  const span=months.length, every=span>200?60:span>100?24:12;
-  months.forEach((k,i)=>{ if(k.endsWith('-01')&&(+k.slice(0,4))%(every/12)===0) el('text',{x:x(i),y:H-3,'text-anchor':'middle'},svg).textContent=k.slice(0,4); });
-  // repères de mobilisation (comptages nationaux)
-  for(const mk of F.marks){ const i=months.indexOf(mk.date.slice(0,7)); if(i<0) continue;
-    el('line',{x1:x(i),x2:x(i),y1:m.t,y2:H-m.b,stroke:'#ffd400','stroke-width':1,'stroke-dasharray':'1 3',opacity:.8},svg);
-    el('text',{x:x(i)-4,y:m.t+8,'text-anchor':'end',style:'fill:#ffd400'},svg).textContent='▲ '+mk.date.slice(8,10)+'.'+mk.date.slice(5,7); }
-  // courbes : 2px, coupées s'il manque un mois
-  for(const l of vis){ const v=val.get(l.id); let d='',pen=false;
-    months.forEach((k,i)=>{ const p=v.get(k); if(p==null){pen=false;return;} d+=(pen?'L':'M')+x(i).toFixed(1)+' '+y(p).toFixed(1); pen=true; });
-    el('path',{d,fill:'none',stroke:COL[l.id],'stroke-width':l.id==='ensemble'?2.2:1.6,'stroke-linejoin':'round',opacity:.95},svg); }
-  // curseur
-  if(F.cursor==null||!months.includes(F.cursor)) F.cursor=months.includes(lastData)?lastData:months.at(-1);
-  const ci=months.indexOf(F.cursor);
-  el('line',{x1:x(ci),x2:x(ci),y1:m.t,y2:H-m.b,stroke:'#d6f2fb','stroke-width':1,opacity:.6},svg);
-  for(const l of vis){ const p=val.get(l.id).get(F.cursor); if(p!=null) el('circle',{cx:x(ci),cy:y(p),r:3.5,fill:COL[l.id],stroke:'#05080b','stroke-width':2},svg); }
-  F.geom={x,m,W};
-  readout(val);
+// --- valeurs au curseur ---
+function ipcAt(l,iso){ // valeur du mois ; après le dernier mois publié, on rappelle le dernier chiffre et son mois
+  const k=iso.slice(0,7), p=l._map.get(k);
+  if(p!=null) return {v:p,mois:k};
+  const last=l.points.at(-1); return last&&k>last[0]?{v:last[1],mois:last[0],ancien:true}:{v:null};
+}
+function gazAt(id,iso){ // valeur du jour, ou la plus récente des 3 jours précédents (l'archive a un jour de retard)
+  const l=gazLine(id); if(!l) return {v:null};
+  for(let d=0;d<=3;d++){ const k=isoDay(ms(iso)-d*DAY), v=l._map.get(k); if(v!=null) return {v,jour:k}; }
+  return {v:null};
 }
 
-function readout(val){
+// --- dessin ---
+function niceTicks(lo,hi,n,steps){ const step=steps.find(s=>(hi-lo)/s<=n)||steps.at(-1); return {lo:Math.floor(lo/step)*step,hi:Math.ceil(hi/step)*step,step}; }
+
+function chart(svg,{series,band,fmt,steps,zero,xlabels}){
+  const W=svg.clientWidth||600, H=svg.clientHeight||80, m={...M,t:6,b:xlabels?15:4};
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.textContent='';
+  const x=t=>M.l+(W-M.l-M.r)*(t-F.t0)/(F.t1-F.t0);
+  const inDom=p=>{const t=ms(p[0]);return t>=F.t0-31*DAY&&t<=F.t1;};
+  let lo=Infinity,hi=-Infinity;
+  for(const s of [...series,...(band||[])]) for(const p of s.points) if(inDom(p)){ lo=Math.min(lo,p[1]); hi=Math.max(hi,p[1]); }
+  if(lo===Infinity){ lo=0; hi=1; }
+  if(zero){ lo=Math.min(lo,0); hi=Math.max(hi,0); }
+  const tk=niceTicks(lo,hi,zero?4:3,steps); if(tk.hi===tk.lo) tk.hi+=tk.step;
+  const y=v=>m.t+(H-m.t-m.b)*(tk.hi-v)/(tk.hi-tk.lo);
+  for(let v=tk.lo;v<=tk.hi+1e-9;v+=tk.step){
+    const isZero=zero&&Math.abs(v)<1e-9;
+    el('line',{x1:M.l,x2:W-M.r,y1:y(v),y2:y(v),stroke:isZero?'#5f7d89':'#17323d','stroke-width':1,'stroke-dasharray':isZero?'':'2 3'},svg);
+    el('text',{x:M.l-6,y:y(v)+3,'text-anchor':'end'},svg).textContent=fmt(v);
+  }
+  if(xlabels){ // années, ou mois si la période est courte
+    const span=(F.t1-F.t0)/DAY, t0=new Date(F.t0), minGap=48;
+    if(span<=400){ for(let d=new Date(Date.UTC(t0.getUTCFullYear(),t0.getUTCMonth()+1,1));d<=F.t1;d.setUTCMonth(d.getUTCMonth()+1)){
+      const px=x(+d); if((d.getUTCMonth()%((W<500)?3:1))) continue;
+      el('text',{x:px,y:H-3,'text-anchor':'middle'},svg).textContent=d.getUTCMonth()?d.toLocaleDateString('fr-FR',{month:'short',timeZone:'UTC'}):String(d.getUTCFullYear()); } }
+    else { const years=[]; for(let yr=t0.getUTCFullYear()+1;Date.UTC(yr,0,1)<=F.t1;yr++) years.push(yr);
+      const every=[1,2,5,10].find(e=>(W-M.l-M.r)/(years.length/e)>=minGap)||10;
+      for(const yr of years) if(yr%every===0) el('text',{x:x(Date.UTC(yr,0,1)),y:H-3,'text-anchor':'middle'},svg).textContent=yr; }
+  }
+  for(const mk of F.marks){ const t=ms(mk.date); if(t<F.t0||t>F.t1) continue;
+    el('line',{x1:x(t),x2:x(t),y1:m.t,y2:H-m.b,stroke:'#ffd400','stroke-width':1,'stroke-dasharray':'1 3',opacity:.8},svg); }
+  const path=pts=>{ let d='',pen=false,prev=null;
+    for(const p of pts){ if(!inDom(p)){pen=false;continue;} const t=ms(p[0]);
+      if(prev!=null&&t-prev>40*DAY) pen=false;  // trou de données : on coupe la ligne
+      d+=(pen?'L':'M')+x(t).toFixed(1)+' '+y(p[1]).toFixed(1); pen=true; prev=t; }
+    return d; };
+  if(band){ const [a,b]=band, A=a.points.filter(inDom), B=b.points.filter(inDom);
+    if(A.length&&B.length) el('path',{d:'M'+A.map(p=>x(ms(p[0])).toFixed(1)+' '+y(p[1]).toFixed(1)).join('L')+'L'+B.reverse().map(p=>x(ms(p[0])).toFixed(1)+' '+y(p[1]).toFixed(1)).join('L')+'Z',
+      fill:band.color,opacity:.16,stroke:'none'},svg); }
+  for(const s of series) el('path',{d:path(s.points),fill:'none',stroke:s.color,'stroke-width':s.width||1.6,'stroke-linejoin':'round'},svg);
+  const g=el('g',{},svg);  // calque du curseur, redessiné seul
+  return {svg,x,y,g,H,m};
+}
+
+let charts=[];
+function draw(){
+  if(!F.now) return;
+  F.t1=ms(F.now); F.t0=F.years?F.t1-F.years*365.25*DAY:Date.UTC(1997,0,1);
+  for(const l of ipcLines()) l._map=l._map||new Map(l.points);
+  charts=[];
+  if(F.ipc){
+    const vis=ipcLines().filter(l=>F.on.has(l.id));
+    charts.push({kind:'ipc',...chart(svgI,{series:vis.map(l=>({id:l.id,points:l.points,color:COL[l.id],width:l.id==='ensemble'?2.2:1.6})),
+      fmt:v=>(v>0?'+':'')+v+' %',steps:[1,2,5,10,20,25,50],zero:true,xlabels:!F.gaz}),lines:vis});
+  }
+  if(F.gaz){
+    const med=gazLine('mediane'), d1=gazLine('d1'), d9=gazLine('d9'), band=d1&&d9?Object.assign([d1,d9],{color:COL.gazole}):null;
+    charts.push({kind:'gaz',...chart(svgG,{series:[{id:'mediane',points:med.points,color:COL.gazole,width:1.8}],band,
+      fmt:v=>v.toFixed(1).replace('.',','),steps:[.1,.2,.25,.5,1],zero:false,xlabels:true})});
+  }
+  cursor();
+}
+
+function cursor(){
+  const iso=F.hover||F.cursor, t=ms(iso);
+  for(const c of charts){ c.g.textContent='';
+    const px=c.x(t); if(px<M.l-1) continue;
+    el('line',{x1:px,x2:px,y1:c.m.t,y2:c.H-c.m.b,stroke:'#d6f2fb','stroke-width':1,opacity:F.hover?.35:.7},c.g);
+    const dots=c.kind==='ipc'?c.lines.map(l=>{const r=ipcAt(l,iso);return r.ancien?null:{v:r.v,col:COL[l.id]};}):[{v:gazAt('mediane',iso).v,col:COL.gazole}];
+    for(const d of dots) if(d&&d.v!=null) el('circle',{cx:px,cy:c.y(d.v),r:3.5,fill:d.col,stroke:'#05080b','stroke-width':2},c.g);
+  }
+  readout(iso);
+}
+
+function readout(iso){
   read.textContent='';
-  const b=document.createElement('b'); b.textContent=mois(F.cursor).toUpperCase(); read.appendChild(b);
-  for(const l of lines()){ if(!F.on.has(l.id)) continue;
-    const s=document.createElement('span'), i=document.createElement('i'), st=document.createElement('strong'), t=document.createElement('em');
-    const v=val.get(l.id).get(F.cursor); i.style.background=COL[l.id]; st.textContent=v==null&&F.cursor>l.points.at(-1)[0]?'non publié':pct(v); t.textContent=l.label; t.style.fontStyle='normal'; t.style.color='var(--dim)';
-    s.append(i,st,t); read.appendChild(s); }
-  const mk=F.marks.find(m=>m.date.slice(0,7)===F.cursor);
+  const isNow=iso===F.now, b=document.createElement('b');
+  b.textContent=jour(iso).toUpperCase()+(isNow?' · MAINTENANT':''); read.appendChild(b);
+  const item=(col,val,label)=>{ const s=document.createElement('span'), i=document.createElement('i'), st=document.createElement('strong'), t=document.createElement('em');
+    i.style.background=col; st.textContent=val; t.textContent=label; t.style.fontStyle='normal'; t.style.color='var(--dim)'; s.append(i,st,t); read.appendChild(s); };
+  if(F.gaz){ const m=gazAt('mediane',iso), a=gazAt('d1',iso), z=gazAt('d9',iso);
+    if(m.v!=null) item(COL.gazole,eur(m.v),`gazole${m.jour!==iso?' ('+court(m.jour)+')':''} [${eur(a.v,2)}–${eur(z.v,2)}]`);
+    else item(COL.gazole,'—',`gazole : archive à partir du ${jour(gazLine('mediane').points[0][0])}`); }
+  for(const l of ipcLines()){ if(!F.on.has(l.id)) continue; const r=ipcAt(l,iso);
+    item(COL[l.id],pct(r.v),l.label+(r.ancien?` (${mois(r.mois)})`:'')); }
+  const mk=F.marks.find(m=>Math.abs(ms(m.date)-ms(iso))<=3*DAY);
   if(mk){ const s=document.createElement('span'); s.style.color='var(--signal)';
     s.textContent=`▲ ${mk.date.split('-').reverse().join('.')} : ${mk.interieur?mk.interieur.toLocaleString('fr-FR'):'—'} (Intérieur) – ${mk.organisateurs?mk.organisateurs.toLocaleString('fr-FR'):'—'} (organisateurs)`; read.appendChild(s); }
 }
 
-function pick(clientX){
-  const r=svg.getBoundingClientRect(), {m,W}=F.geom, px=(clientX-r.left)*W/r.width;
-  const i=Math.round((px-m.l)/(W-m.l-m.r)*(F.months.length-1));
-  const k=F.months[Math.max(0,Math.min(F.months.length-1,i))]; if(k!==F.cursor){ F.cursor=k; draw(); }
+function setCursor(iso){
+  iso=iso>F.now?F.now:iso<isoDay(F.t0)?isoDay(F.t0):iso;
+  F.cursor=iso; F.hover=null; nowBtn.disabled=iso===F.now; cursor();
+  window.ECART_MAP?.setDate(iso,iso===F.now);
 }
-svg.addEventListener('pointermove',e=>pick(e.clientX));
-svg.addEventListener('pointerdown',e=>pick(e.clientX));
-svg.addEventListener('keydown',e=>{ const i=F.months.indexOf(F.cursor), d=e.key==='ArrowLeft'?-1:e.key==='ArrowRight'?1:e.key==='Home'?-1e4:e.key==='End'?1e4:0;
-  if(!d) return; e.preventDefault(); F.cursor=F.months[Math.max(0,Math.min(F.months.length-1,i+d))]; draw(); });
+function dateAt(clientX){
+  const r=svgI.getBoundingClientRect().width?svgI.getBoundingClientRect():svgG.getBoundingClientRect();
+  const W=r.width, px=clientX-r.left, t=F.t0+(px-M.l)/(W-M.l-M.r)*(F.t1-F.t0);
+  return isoDay(Math.max(F.t0,Math.min(F.t1,t)));
+}
+// Survol : aperçu sans toucher la carte. Clic / glisser / toucher : déplace le curseur et la carte.
+wrap.addEventListener('pointermove',e=>{ if(!charts.length) return;
+  if(e.buttons&1){ setCursor(dateAt(e.clientX)); } else if(e.pointerType==='mouse'){ F.hover=dateAt(e.clientX); cursor(); } });
+wrap.addEventListener('pointerdown',e=>{ if(e.target.closest('button')) return; setCursor(dateAt(e.clientX)); });
+wrap.addEventListener('pointerleave',()=>{ if(F.hover){ F.hover=null; cursor(); } });
+wrap.addEventListener('keydown',e=>{
+  const step=e.shiftKey?30:1, t=ms(F.cursor);
+  const next=e.key==='ArrowLeft'?t-step*DAY:e.key==='ArrowRight'?t+step*DAY:e.key==='Home'?F.t0:e.key==='End'?F.t1:null;
+  if(next==null) return; e.preventDefault(); setCursor(isoDay(next)); });
+nowBtn.onclick=()=>setCursor(F.now);
 document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{ F.years=+b.dataset.y; document.querySelectorAll('.seg button').forEach(o=>o.setAttribute('aria-pressed',o===b)); draw(); });
-addEventListener('resize',()=>F.doc&&draw());
+addEventListener('resize',()=>draw());
+
+function method(id,doc,extra){
+  const p=$(id); if(!doc){ p.hidden=true; return; }
+  const a=(href,txt)=>{ const n=document.createElement('a'); n.href=href; n.target='_blank'; n.rel='noopener'; n.textContent=txt; n.style.color='var(--cyan)'; return n; };
+  const t=document.createElement('b'); t.textContent=doc.titre+' — '; t.style.color='var(--ink)'; t.style.fontWeight='500';
+  p.append(t,`${doc.methode} ${extra||''}Limites : ${doc.limites} Portée : ${doc.portee}. Source : `,a(doc.source.url,doc.source.label));
+  const ids=doc.lignes.filter(l=>l.idbank&&(COL[l.id]||l.id==='hors_tabac'));
+  if(ids.length) p.append(' · séries : ',...ids.flatMap((l,i)=>i?[', ',a(l.url,l.idbank)]:[a(l.url,l.idbank)]));
+  p.append(` · mise à jour ${new Date(doc.updated).toLocaleDateString('fr-FR')}.`);
+}
 
 (async()=>{
-  const [doc,part]=await Promise.all([load('./data/series/ipc.json'),load('./data/participation.json')]);
-  if(!doc){ document.querySelector('.frise').hidden=true; return; }
-  F.doc=doc; F.marks=(part?.rows||[]).filter(r=>r.perimetre==='national');
-  const meth=document.getElementById('fmeth'), a=document.createElement('a');
-  a.href=doc.source.url; a.target='_blank'; a.rel='noopener'; a.textContent=doc.source.label; a.style.color='var(--cyan)';
-  const calc=doc.lignes.filter(l=>l.calcul&&COL[l.id]).map(l=>`${l.label} : ${l.calcul}, comparé à « Ensemble hors tabac ».`).join(' ');
-  meth.append(`${doc.methode} ${calc} Limites : ${doc.limites} Portée : ${doc.portee}. Source : `,a,
-    ` · séries : `,...doc.lignes.filter(l=>COL[l.id]||l.id==='hors_tabac').flatMap((l,i)=>{ const s=document.createElement('a'); s.href=l.url; s.target='_blank'; s.rel='noopener'; s.textContent=l.idbank; s.style.color='var(--cyan)'; return i?[', ',s]:[s]; }),
-    ` · mise à jour ${new Date(doc.updated).toLocaleDateString('fr-FR')}.`);
+  const [ipc,gaz,part]=await Promise.all([load('./data/series/ipc.json'),load('./data/series/gazole.json'),load('./data/participation.json')]);
+  if(!ipc&&!gaz){ document.querySelector('.frise').hidden=true; return; }
+  F.ipc=ipc; F.gaz=gaz; F.marks=(part?.rows||[]).filter(r=>r.perimetre==='national');
+  if(gaz) for(const l of gaz.lignes) l._map=new Map(l.points);
+  if(!ipc){ svgI.hidden=true; svgI.previousElementSibling.hidden=true; }
+  if(!gaz){ svgG.hidden=true; svgG.previousElementSibling.hidden=true; }
+  const d=new Date(); F.now=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  F.cursor=F.now;
+  method('fmeth-ipc',ipc,ipc?ipc.lignes.filter(l=>l.calcul&&COL[l.id]).map(l=>`${l.label} : ${l.calcul}, comparé à « Ensemble hors tabac ». `).join(''):'');
+  method('fmeth-gaz',gaz,'La bande montre l\'écart entre les 10 % de stations les moins chères et les 10 % les plus chères. Sur la carte, quand le curseur n\'est pas sur « maintenant », les départements affichent la médiane de la semaine choisie, sur une échelle de couleur fixe pour toute la période. ');
   legend(); draw();
 })();
 })();
