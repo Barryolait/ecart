@@ -57,6 +57,8 @@ dd{margin:0;text-align:right}
 .hud>.panel:not(.frise){max-height:100%;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
 .layer{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;cursor:pointer;padding:6px 0;border-top:1px solid var(--line)}
 .layer input{accent-color:var(--signal);margin:0;width:14px;height:14px}
+.base{border:0;margin:0;padding:0;min-width:0}
+.base legend{padding:4px 0 2px;color:var(--dim);font-size:10px;letter-spacing:.16em;text-transform:uppercase}
 .layer input:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
 .layer span{text-transform:uppercase;letter-spacing:.08em}
 .chip{font-size:9.5px;letter-spacing:.14em;padding:2px 6px;border:1px solid currentColor}
@@ -142,12 +144,23 @@ dd{margin:0;text-align:right}
 
   <section class="panel layers" aria-labelledby="p-lay">
     <h2 id="p-lay"><span>Couches</span><span>statut</span></h2>
-    <label class="layer"><input type="checkbox" id="l-fuel" checked><span>Prix gazole</span><em class="chip" id="s-fuel">--</em></label>
+    <fieldset class="base"><legend>Fond de carte</legend>
+      <label class="layer"><input type="radio" name="base" value="fuel" checked><span>Prix gazole</span><em class="chip" id="s-fuel">--</em></label>
+      <label class="layer"><input type="radio" name="base" value="ips"><span>IPS privé − public</span><em class="chip archive" id="s-ips">annuel</em></label>
+      <label class="layer"><input type="radio" name="base" value="none"><span>Aucun</span><em></em></label>
+    </fieldset>
+    <label class="layer"><input type="checkbox" id="l-col"><span>Collèges (IPS)</span><em class="chip archive" id="s-col">annuel</em></label>
     <label class="layer"><input type="checkbox" id="l-evt" checked><span>Protestations</span><em class="chip" id="s-evt">--</em></label>
     <label class="layer"><input type="checkbox" id="l-part" checked><span>Comptages</span><em class="chip manuel" id="s-part">manuel</em></label>
     <div>
-      <div class="scale"></div>
+      <div class="scale" id="scale"></div>
       <div class="ticks"><span id="sc-lo">1,60 €</span><span id="sc-lbl">moy. / cellule</span><span id="sc-hi">2,00 €</span></div>
+    </div>
+    <div id="col-leg" hidden>
+      <div class="scale" style="background:linear-gradient(90deg,var(--cyan),#5f7d89,var(--signal))"></div>
+      <div class="ticks"><span>70 · défavorisé</span><span id="col-mid">IPS</span><span>favorisé · 140</span></div>
+      <dl><dt><span class="sw" style="background:var(--dim);border-radius:50%"></span>Collège public</dt><dd>point plein</dd>
+        <dt><span class="sw" style="border:1px solid var(--dim);border-radius:50%"></span>Privé sous contrat</dt><dd>anneau</dd></dl>
     </div>
     <dl>
       <dt><span class="sw" style="background:var(--cyan)"></span>Intérieur</dt><dd>tige pleine</dd>
@@ -162,7 +175,7 @@ dd{margin:0;text-align:right}
   <section class="panel frise" aria-labelledby="p-frise">
     <div class="row">
       <h2 id="p-frise"><span>Frise</span></h2>
-      <div class="seg" role="group" aria-label="Période affichée">
+      <div class="seg" id="fper" role="group" aria-label="Période affichée">
         <button type="button" data-y="1" aria-pressed="false">1 an</button><button type="button" data-y="5" aria-pressed="true">5 ans</button><button type="button" data-y="0" aria-pressed="false">depuis 1997</button>
       </div>
       <button type="button" class="now" id="fnow" disabled>▶ maintenant</button>
@@ -171,10 +184,10 @@ dd{margin:0;text-align:right}
     <div class="fwrap" id="fwrap" tabindex="0" role="group" aria-label="Frise temporelle : cliquer ou glisser pour choisir une date. Flèches : un jour ; Maj + flèches : un mois ; Fin : maintenant">
       <div class="fhead"><h3>Inflation sur un an</h3><div class="leg" id="fleg" role="group" aria-label="Séries d'inflation affichées"></div></div>
       <svg id="fsvg-ipc" class="fsvg" aria-hidden="true"></svg>
-      <div class="fhead"><h3>Gazole, €/L · médiane et 1<sup>er</sup>–9<sup>e</sup> décile des stations</h3></div>
+      <div class="fhead"><div class="seg" id="fsel" role="group" aria-label="Indicateur du second graphe"></div><h3 id="fsel-t"></h3></div>
       <svg id="fsvg-gaz" class="fsvg small" aria-hidden="true"></svg>
     </div>
-    <details><summary>Méthode, limites, sources</summary><p id="fmeth-ipc"></p><p id="fmeth-gaz"></p></details>
+    <details><summary>Méthode, limites, sources</summary><p id="fmeth-ipc"></p><p id="fmeth-gaz"></p><p id="fmeth-eco"></p></details>
   </section>
 </main>
 
@@ -189,6 +202,7 @@ const fmt = n => n == null ? '—' : n.toLocaleString('fr-FR');
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
 const euro = p => p.toFixed(2).replace('.',',')+' €';
 const frDate = iso => iso.split('-').reverse().join('.');
+const dec = v => v==null ? '—' : String(v).replace('.',',');
 
 // Contour simplifié de la France métropolitaine (lon, lat)
 const FR = [[-1.78,43.37],[-1.25,44.6],[-1.15,46.2],[-2.15,46.85],[-2.5,47.3],[-3.4,47.7],[-4.4,47.8],[-4.75,48.35],[-4.4,48.65],[-3.5,48.85],[-2.6,48.55],[-1.6,48.65],[-1.9,49.7],[-1.25,49.67],[-0.2,49.3],[0.2,49.72],[1.4,50.1],[1.6,50.9],[2.55,51.08],[3.2,50.75],[4.2,49.98],[4.85,50.15],[5.8,49.5],[6.4,49.46],[7.6,49.05],[8.2,48.97],[7.58,47.6],[7.0,47.47],[6.1,46.25],[6.8,46.4],[7.0,45.9],[6.65,45.1],[7.05,44.25],[7.52,43.79],[6.6,43.15],[5.3,43.2],[4.2,43.48],[3.1,43.05],[3.18,42.43],[1.72,42.5],[0.0,42.7],[-1.78,43.37]];
@@ -213,7 +227,7 @@ function demoEvents(cities){
 }
 async function load(name){ try{ const r=await fetch('./data/'+name,{cache:'no-store'}); if(!r.ok) throw 0; return await r.json(); }catch(e){ return null; } }
 
-const state={fuel:null,evt:null,part:null,show:{fuel:true,evt:true,part:true},t:0};
+const state={fuel:null,evt:null,part:null,show:{evt:true,part:true,col:false},base:'fuel',ecole:null,ri:null,iso:null,t:0};
 
 // Échelle live : p05 / p95 du flux du jour. Échelle archive : p05 / p95 de tout l'historique,
 // fixe pour que les couleurs restent comparables d'une semaine à l'autre.
@@ -226,20 +240,46 @@ function colorFor(p){
   return [0,1,2].map(k=>Math.round(a[k]+(b[k]-a[k])*u));
 }
 
+// École : IPS en divergent (cyan défavorisé → gris = moyenne nationale → jaune favorisé), écart privé - public en séquentiel jaune
+const IPS_LO=70, IPS_HI=140, GAP_HI=40;
+function mix(a,b,u){ return [0,1,2].map(k=>Math.round(a[k]+(b[k]-a[k])*u)); }
+function colorIPS(v){ const mid=state.ecole.ips_national[state.ri];
+  return v<mid?mix(C.cyan,C.dim,Math.max(0,(v-IPS_LO)/(mid-IPS_LO))):mix(C.dim,C.signal,Math.min(1,(v-mid)/(IPS_HI-mid))); }
+const colorGap=g=>mix([23,50,61],C.signal,Math.max(0,Math.min(1,g/GAP_HI)));
+const gapOf=code=>{ const d=state.ecole?.deps[code]; const pu=d?.pu[state.ri], pr=d?.pr[state.ri]; return pu==null||pr==null?null:+(pr-pu).toFixed(1); };
+
 function layers(){
   const L=[], D=deck;
   L.push(new D.PathLayer({id:'fr',data:[{path:FR},{path:CORSE}],getPath:d=>d.path,getColor:[...C.cyan,200],widthMinPixels:1.2}));
   const grat=[]; for(let x=-6;x<=10;x++) grat.push({s:[x,41],t:[x,51.6]}); for(let y=41;y<=51.6;y++) grat.push({s:[-6,y],t:[10,y]});
   L.push(new D.LineLayer({id:'grat',data:grat,getSourcePosition:d=>d.s,getTargetPosition:d=>d.t,getColor:[...C.line,255],getWidth:1}));
-  if(state.week===-1){ /* curseur avant le début de l'archive : pas de couche gazole */ }
-  else if(state.show.fuel&&state.week!=null){ const w=state.week, vals=state.hist.deps;
+  const ecoleOk=state.ecole&&state.ri!=null&&state.ri>=0;
+  if(state.base==='ips'&&ecoleOk){ const ri=state.ri;
+    // les collèges en points se lisent mieux sur un fond à plat
+    L.push(new D.GeoJsonLayer({id:'ips-dep',data:state.depGeo,extruded:!state.show.col,wireframe:true,filled:true,
+      getElevation:f=>{const g=gapOf(f.properties.code); return g==null?0:Math.max(0,g)*1400;},
+      getFillColor:f=>{const g=gapOf(f.properties.code); return g==null?[...C.dim,25]:[...colorGap(g),80];},
+      getLineColor:f=>{const g=gapOf(f.properties.code); return g==null?[...C.dim,120]:[...colorGap(g),230];},
+      lineWidthMinPixels:1,pickable:true,updateTriggers:{getElevation:ri,getFillColor:ri,getLineColor:ri}}));
+  }
+  if(state.base!=='fuel'||state.week===-1){ /* autre fond, ou curseur avant le début de l'archive gazole */ }
+  else if(state.week!=null){ const w=state.week, vals=state.hist.deps;
     L.push(new D.GeoJsonLayer({id:'fuel-dep',data:state.depGeo,extruded:true,wireframe:true,filled:true,
       getElevation:f=>{const v=vals[f.properties.code]?.[w]; return v==null?0:norm(v)*40000;},
       getFillColor:f=>{const v=vals[f.properties.code]?.[w]; return v==null?[...C.dim,25]:[...colorFor(v),70];},
       getLineColor:f=>{const v=vals[f.properties.code]?.[w]; return v==null?[...C.dim,120]:[...colorFor(v),220];},
       lineWidthMinPixels:1,pickable:true,updateTriggers:{getElevation:w,getFillColor:w,getLineColor:w}}));
-  } else if(state.show.fuel&&state.fuel) L.push(new D.ColumnLayer({id:'fuel',data:state.fuel.cells,diskResolution:4,angle:45,radius:8200,extruded:true,wireframe:true,filled:true,
+  } else if(state.fuel) L.push(new D.ColumnLayer({id:'fuel',data:state.fuel.cells,diskResolution:4,angle:45,radius:8200,extruded:true,wireframe:true,filled:true,
     getPosition:d=>[d[0],d[1]],getElevation:d=>norm(d[2])*40000,getFillColor:d=>[...colorFor(d[2]),70],getLineColor:d=>[...colorFor(d[2]),220],pickable:true}));
+  if(state.show.col&&ecoleOk){ const ri=state.ri;
+    const colData=state.colData||(state.colData={}); colData[ri]=colData[ri]||state.ecole.colleges.filter(c=>c[8][ri]!=null);
+    L.push(new D.ScatterplotLayer({id:'col',data:colData[ri],
+      getPosition:c=>[c[6],c[7],600],getRadius:1500,radiusMinPixels:2.2,radiusMaxPixels:9,
+      stroked:true,filled:true,lineWidthMinPixels:1.2,
+      getFillColor:c=>c[4]==='pu'?[...colorIPS(c[8][ri]),230]:[0,0,0,0],
+      getLineColor:c=>[...colorIPS(c[8][ri]),c[4]==='pu'?0:255],
+      pickable:true,updateTriggers:{getFillColor:ri,getLineColor:ri}}));
+  }
   const cities=(state.part?.rows||[]).filter(r=>r.perimetre==='ville');
   if(state.show.part){
     const known=cities.filter(c=>c.interieur||c.organisateurs), unknown=cities.filter(c=>!c.interieur&&!c.organisateurs);
@@ -267,6 +307,10 @@ function tooltip({object,layer}){
   const box={backgroundColor:'rgba(4,10,13,.92)',color:'#d6f2fb',border:'1px solid #17323d',padding:'8px 10px'};
   if(layer.id==='fuel-dep'){ const v=state.hist.deps[object.properties.code]?.[state.week];
     return {html:`<b>${esc(object.properties.nom.toUpperCase())}</b><br>GAZOLE, MÉDIANE <b>${v==null?'non publiée (moins de 5 stations)':v.toFixed(3).replace('.',',')+' €'}</b><br>semaine du ${frDate(state.hist.semaines[state.week])}<br>archives prix-carburants.gouv.fr`,style:box}; }
+  if(layer.id==='ips-dep'){ const d=state.ecole.deps[object.properties.code], ri=state.ri, g=gapOf(object.properties.code);
+    return {html:`<b>${esc(object.properties.nom.toUpperCase())}</b><br>ÉCART IPS PRIVÉ − PUBLIC <b>${g==null?'sans objet (pas de collège privé)':(g>0?'+':'')+String(g).replace('.',',')}</b><br>collèges publics ${dec(d?.pu[ri])} · privés ${dec(d?.pr[ri])}<br>rentrée ${state.ecole.rentrees[ri]} · ministère de l'Éducation nationale`,style:box}; }
+  if(layer.id==='col'){ const c=object, ri=state.ri, d=state.ecole.deps[c[3]];
+    return {html:`<b>${esc(c[1])}</b><br>${esc(c[2])} · ${c[4]==='pu'?'public':'privé sous contrat'}${c[5]?' · '+esc(c[5]):''}<br>IPS <b>${dec(c[8][ri])}</b> (écart-type ${dec(c[9][ri])})<br>moyenne du département : public ${dec(d?.pu[ri])} · privé ${dec(d?.pr[ri])}<br>rentrée ${state.ecole.rentrees[ri]} · ministère de l'Éducation nationale`,style:box}; }
   if(layer.id==='fuel') return {html:`GAZOLE <b>${object[2].toFixed(3).replace('.',',')} €</b><br>${object[3]?object[3]+' stations':'donnée de démonstration'}`,style:box};
   if(layer.id==='evt') return {html:`<b>${esc(object.lieu)}</b><br>${object.date.replace('T',' ').replace('Z',' UTC')}${object.precision?' · précision '+object.precision:''}${object.url?'<br>source : '+esc(new URL(object.url).hostname)+'<br><i>clic pour ouvrir l\'article</i>':''}`,style:box};
   if(layer.id.startsWith('p-')) return {html:`<b>${object.ville.toUpperCase()}</b><br>Intérieur : ${fmt(object.interieur)}<br>Organisateurs : ${fmt(object.organisateurs)}<br>Indépendant : ${fmt(object.independant)}${object.source?'<br>'+object.source.label:''}`,style:box};
@@ -313,6 +357,15 @@ function render(){ dg.setProps({layers:layers()}); }
 // Le curseur de la frise pilote la couche gazole : « maintenant » = flux live, sinon médiane départementale de la semaine
 state.week=null;
 function fuelMode(){
+  const lo=document.getElementById('sc-lo'), hi=document.getElementById('sc-hi'), lbl=document.getElementById('sc-lbl'), sc=document.getElementById('scale');
+  const rlabel=state.ecole?(state.ri>=0?state.ecole.rentrees[state.ri].replace(/-20(\d\d)$/,'-$1'):'dès 2023'):'annuel';
+  for(const id of ['s-ips','s-col']){ const el=document.getElementById(id); el.textContent=rlabel; el.className='chip '+(state.ecole&&state.ri<0?'demo':'archive'); }
+  document.getElementById('col-leg').hidden=!state.show.col;
+  if(state.ecole) document.getElementById('col-mid').textContent=`IPS · moy. ${String(state.ecole.ips_national[Math.max(0,state.ri)]).replace('.',',')}`;
+  sc.parentElement.hidden=state.base==='none';
+  if(state.base==='ips'){ sc.style.background='linear-gradient(90deg,#17323d,var(--signal))';
+    lo.textContent='0'; hi.textContent='+'+GAP_HI; lbl.textContent='écart IPS privé − public'; return; }
+  sc.style.background='';
   const hist=state.week!=null;
   SCALE=hist?SCALE_HIST:SCALE_LIVE;
   document.getElementById('sc-lo').textContent=euro(SCALE.lo); document.getElementById('sc-hi').textContent=euro(SCALE.hi);
@@ -321,13 +374,28 @@ function fuelMode(){
   if(hist){ const el=document.getElementById('s-fuel'); el.className='chip archive'; el.textContent=before?'hors archive':'archive'; }
   else if(state.fuel) chip('s-fuel',state.fuel.mode);
 }
+// Le curseur choisit aussi la rentrée scolaire (une rentrée vaut du 1er septembre au 31 août suivant)
+function rentreeAt(iso,now){
+  if(!state.ecole) return null;
+  const R=state.ecole.rentrees; if(now) return R.length-1;
+  for(let i=R.length-1;i>=0;i--) if(R[i].slice(0,4)+'-09-01'<=iso) return i;
+  return -1;
+}
+let ecoleLoading=null;
+function ensureEcole(){
+  if(state.ecole||ecoleLoading) return;
+  ecoleLoading=load('ecole_colleges.json').then(d=>{ if(!d) return; state.ecole=d; state.ri=rentreeAt(state.iso||'9999',state.iso==null||state.isNow); fuelMode(); render(); });
+}
 window.ECART_MAP={setDate(iso,now){
+  state.iso=iso; state.isNow=now;
+  const ri=rentreeAt(iso,now); if(ri!==state.ri){ state.ri=ri; fuelMode(); }
   let w=null;
   if(!now&&state.hist){ const S=state.hist.semaines; w=-1; for(let i=S.length-1;i>=0;i--) if(S[i]<=iso){ w=i; break; } }
-  if(w===state.week) return;
-  state.week=w; fuelMode(); render();
+  if(w!==state.week){ state.week=w; fuelMode(); }
+  render();
 }};
-['fuel','evt','part'].forEach(k=>document.getElementById('l-'+k).addEventListener('change',e=>{state.show[k]=e.target.checked;render();}));
+['evt','part','col'].forEach(k=>document.getElementById('l-'+k).addEventListener('change',e=>{state.show[k]=e.target.checked; if(k==='col'&&e.target.checked) ensureEcole(); fuelMode(); render();}));
+document.querySelectorAll('input[name=base]').forEach(r=>r.addEventListener('change',e=>{ state.base=e.target.value; if(state.base==='ips') ensureEcole(); fuelMode(); render(); }));
 setInterval(()=>{document.getElementById('clock').textContent=new Date().toLocaleTimeString('fr-FR');},1000);
 
 (async()=>{
@@ -355,6 +423,11 @@ const NS='http://www.w3.org/2000/svg', DAY=864e5;
 // Couleur fixe par série (validée en séparation daltonisme sur fond #05080b), jamais par rang.
 // Le gazole reprend la teinte des produits pétroliers : même famille.
 const COL={ensemble:'#ffffff',energie:'#ff4a3d',alimentation:'#3ae6ff',q1:'#ffd400',frais:'#5dff9b',petroliers:'#c58bff',gazole:'#c58bff'};
+// École : public cyan / privé jaune, comme le gradient d'IPS de la carte ; les autres indicateurs sont seuls sur leur graphe
+const COL_ECO={ips_public:'#3ae6ff',ips_prive:'#ffd400'};
+const FMT_ECO={ips:v=>String(v).replace('.',','),classes:v=>v.toFixed(1).replace('.',','),
+  ecoles:v=>v>=1e4?Math.round(v/1e3)+' k':v.toLocaleString('fr-FR'),eleves:v=>(v/1e6).toFixed(1).replace('.',',')+' M'};
+const STEPS_ECO={ips:[5,10,20,25,50],classes:[.5,1,2,5],ecoles:[1e3,2e3,5e3,1e4],eleves:[1e5,2e5,5e5,1e6]};
 const DEFAULT_ON=['ensemble','energie','alimentation','q1'];
 const M={l:46,r:8};  // marges horizontales communes : les deux graphes partagent le même axe x
 const ms=iso=>Date.parse(iso.length===7?iso+'-15':iso);
@@ -366,13 +439,25 @@ const court=iso=>new Date(ms(iso)).toLocaleDateString('fr-FR',{day:'numeric',mon
 const jour=iso=>new Date(ms(iso)).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});
 const el=(tag,attrs={},parent)=>{const n=document.createElementNS(NS,tag);for(const k in attrs)n.setAttribute(k,attrs[k]);parent&&parent.appendChild(n);return n;};
 const $=id=>document.getElementById(id);
-const wrap=$('fwrap'), svgI=$('fsvg-ipc'), svgG=$('fsvg-gaz'), leg=$('fleg'), read=$('fread'), nowBtn=$('fnow');
-const F={ipc:null,gaz:null,marks:[],years:5,on:new Set(DEFAULT_ON),cursor:null,hover:null,now:null,t0:0,t1:0};
+const wrap=$('fwrap'), svgI=$('fsvg-ipc'), svgG=$('fsvg-gaz'), leg=$('fleg'), read=$('fread'), nowBtn=$('fnow'), sel=$('fsel'), selT=$('fsel-t');
+const F={ipc:null,gaz:null,eco:null,sel:'gazole',marks:[],years:5,on:new Set(DEFAULT_ON),cursor:null,hover:null,now:null,t0:0,t1:0};
 window.ECART_FRISE=F;
 
 async function load(path){ try{ const r=await fetch(path,{cache:'no-store'}); if(!r.ok) throw 0; return await r.json(); }catch(e){ return null; } }
 const ipcLines=()=>F.ipc?F.ipc.lignes.filter(l=>COL[l.id]):[];
 const gazLine=id=>F.gaz?.lignes.find(l=>l.id===id);
+const ecoLines=g=>F.eco?F.eco.lignes.filter(l=>l.groupe===g):[];
+
+// Second graphe à indicateur choisi : gazole, ou un des groupes de data/series/ecole.json
+function selector(){
+  const opts=[...(F.gaz?[{id:'gazole',btn:'Gazole',titre:'€/L · médiane et 1er–9e décile des stations'}]:[]),
+    ...(F.eco?Object.entries(F.eco.groupes).map(([g,t])=>({id:g,btn:{ips:'IPS collèges',classes:'Élèves/classe',ecoles:'Écoles',eleves:'Élèves'}[g]||g,titre:t})):[])];
+  if(!opts.some(o=>o.id===F.sel)) F.sel=opts[0]?.id;
+  sel.textContent='';
+  for(const o of opts){ const b=document.createElement('button'); b.type='button'; b.textContent=o.btn; b.setAttribute('aria-pressed',o.id===F.sel);
+    b.onclick=()=>{ F.sel=o.id; selector(); draw(); }; sel.appendChild(b); }
+  selT.textContent=opts.find(o=>o.id===F.sel)?.titre||'';
+}
 
 function legend(){
   leg.textContent='';
@@ -392,6 +477,9 @@ function ipcAt(l,iso){ // valeur du mois ; après le dernier mois publié, on ra
   if(p!=null) return {v:p,mois:k};
   const last=l.points.at(-1); return last&&k>last[0]?{v:last[1],mois:last[0],ancien:true}:{v:null};
 }
+function ecoAt(l,iso){ // valeur de la dernière rentrée commencée à cette date
+  let r={v:null}; for(const p of l.points) if(p[0]+'-01'<=iso) r={v:p[1],rentree:p[0].slice(0,4)}; return r;
+}
 function gazAt(id,iso){ // valeur du jour, ou la plus récente des 3 jours précédents (l'archive a un jour de retard)
   const l=gazLine(id); if(!l) return {v:null};
   for(let d=0;d<=3;d++){ const k=isoDay(ms(iso)-d*DAY), v=l._map.get(k); if(v!=null) return {v,jour:k}; }
@@ -401,7 +489,7 @@ function gazAt(id,iso){ // valeur du jour, ou la plus récente des 3 jours préc
 // --- dessin ---
 function niceTicks(lo,hi,n,steps){ const step=steps.find(s=>(hi-lo)/s<=n)||steps.at(-1); return {lo:Math.floor(lo/step)*step,hi:Math.ceil(hi/step)*step,step}; }
 
-function chart(svg,{series,band,fmt,steps,zero,xlabels}){
+function chart(svg,{series,band,fmt,steps,zero,xlabels,dots}){
   const W=svg.clientWidth||600, H=svg.clientHeight||80, m={...M,t:6,b:xlabels?15:4};
   svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.textContent='';
   const x=t=>M.l+(W-M.l-M.r)*(t-F.t0)/(F.t1-F.t0);
@@ -430,13 +518,14 @@ function chart(svg,{series,band,fmt,steps,zero,xlabels}){
     el('line',{x1:x(t),x2:x(t),y1:m.t,y2:H-m.b,stroke:'#ffd400','stroke-width':1,'stroke-dasharray':'1 3',opacity:.8},svg); }
   const path=pts=>{ let d='',pen=false,prev=null;
     for(const p of pts){ if(!inDom(p)){pen=false;continue;} const t=ms(p[0]);
-      if(prev!=null&&t-prev>40*DAY) pen=false;  // trou de données : on coupe la ligne
+      if(prev!=null&&t-prev>(dots?400:40)*DAY) pen=false;  // trou de données (plus d'un mois, ou d'un an pour les séries annuelles) : on coupe la ligne
       d+=(pen?'L':'M')+x(t).toFixed(1)+' '+y(p[1]).toFixed(1); pen=true; prev=t; }
     return d; };
   if(band){ const [a,b]=band, A=a.points.filter(inDom), B=b.points.filter(inDom);
     if(A.length&&B.length) el('path',{d:'M'+A.map(p=>x(ms(p[0])).toFixed(1)+' '+y(p[1]).toFixed(1)).join('L')+'L'+B.reverse().map(p=>x(ms(p[0])).toFixed(1)+' '+y(p[1]).toFixed(1)).join('L')+'Z',
       fill:band.color,opacity:.16,stroke:'none'},svg); }
-  for(const s of series) el('path',{d:path(s.points),fill:'none',stroke:s.color,'stroke-width':s.width||1.6,'stroke-linejoin':'round'},svg);
+  for(const s of series){ el('path',{d:path(s.points),fill:'none',stroke:s.color,'stroke-width':s.width||1.6,'stroke-linejoin':'round'},svg);
+    if(dots) for(const p of s.points) if(inDom(p)) el('circle',{cx:x(ms(p[0])),cy:y(p[1]),r:2.5,fill:s.color},svg); }  // séries annuelles : un point par rentrée
   const g=el('g',{},svg);  // calque du curseur, redessiné seul
   return {svg,x,y,g,H,m};
 }
@@ -452,7 +541,11 @@ function draw(){
     charts.push({kind:'ipc',...chart(svgI,{series:vis.map(l=>({id:l.id,points:l.points,color:COL[l.id],width:l.id==='ensemble'?2.2:1.6})),
       fmt:v=>(v>0?'+':'')+v+' %',steps:[1,2,5,10,20,25,50],zero:true,xlabels:!F.gaz}),lines:vis});
   }
-  if(F.gaz){
+  if(F.sel&&F.sel!=='gazole'){
+    const ls=ecoLines(F.sel);
+    charts.push({kind:'eco',...chart(svgG,{series:ls.map(l=>({id:l.id,points:l.points,color:COL_ECO[l.id]||'#ffffff',width:1.8})),
+      fmt:FMT_ECO[F.sel]||String,steps:STEPS_ECO[F.sel]||[1,2,5,10],zero:false,xlabels:true,dots:true}),lines:ls});
+  } else if(F.gaz){
     const med=gazLine('mediane'), d1=gazLine('d1'), d9=gazLine('d9'), band=d1&&d9?Object.assign([d1,d9],{color:COL.gazole}):null;
     charts.push({kind:'gaz',...chart(svgG,{series:[{id:'mediane',points:med.points,color:COL.gazole,width:1.8}],band,
       fmt:v=>v.toFixed(1).replace('.',','),steps:[.1,.2,.25,.5,1],zero:false,xlabels:true})});
@@ -465,7 +558,8 @@ function cursor(){
   for(const c of charts){ c.g.textContent='';
     const px=c.x(t); if(px<M.l-1) continue;
     el('line',{x1:px,x2:px,y1:c.m.t,y2:c.H-c.m.b,stroke:'#d6f2fb','stroke-width':1,opacity:F.hover?.35:.7},c.g);
-    const dots=c.kind==='ipc'?c.lines.map(l=>{const r=ipcAt(l,iso);return r.ancien?null:{v:r.v,col:COL[l.id]};}):[{v:gazAt('mediane',iso).v,col:COL.gazole}];
+    const dots=c.kind==='ipc'?c.lines.map(l=>{const r=ipcAt(l,iso);return r.ancien?null:{v:r.v,col:COL[l.id]};})
+      :c.kind==='eco'?c.lines.map(l=>({v:ecoAt(l,iso).v,col:COL_ECO[l.id]||'#ffffff'})):[{v:gazAt('mediane',iso).v,col:COL.gazole}];
     for(const d of dots) if(d&&d.v!=null) el('circle',{cx:px,cy:c.y(d.v),r:3.5,fill:d.col,stroke:'#05080b','stroke-width':2},c.g);
   }
   readout(iso);
@@ -482,6 +576,9 @@ function readout(iso){
     else item(COL.gazole,'—',`gazole : archive à partir du ${jour(gazLine('mediane').points[0][0])}`); }
   for(const l of ipcLines()){ if(!F.on.has(l.id)) continue; const r=ipcAt(l,iso);
     item(COL[l.id],pct(r.v),l.label+(r.ancien?` (${mois(r.mois)})`:'')); }
+  if(F.sel&&F.sel!=='gazole') for(const l of ecoLines(F.sel)){ const r=ecoAt(l,iso);
+    item(COL_ECO[l.id]||'#ffffff',r.v==null?'—':(F.sel==='ips'||F.sel==='classes'?FMT_ECO[F.sel](r.v):r.v.toLocaleString('fr-FR')),
+      l.label+(r.rentree?` (rentrée ${r.rentree})`:F.sel==='ips'?' (série à partir de 2023)':'')); }
   const mk=F.marks.find(m=>Math.abs(ms(m.date)-ms(iso))<=3*DAY);
   if(mk){ const s=document.createElement('span'); s.style.color='var(--signal)';
     s.textContent=`▲ ${mk.date.split('-').reverse().join('.')} : ${mk.interieur?mk.interieur.toLocaleString('fr-FR'):'—'} (Intérieur) – ${mk.organisateurs?mk.organisateurs.toLocaleString('fr-FR'):'—'} (organisateurs)`; read.appendChild(s); }
@@ -507,7 +604,7 @@ wrap.addEventListener('keydown',e=>{
   const next=e.key==='ArrowLeft'?t-step*DAY:e.key==='ArrowRight'?t+step*DAY:e.key==='Home'?F.t0:e.key==='End'?F.t1:null;
   if(next==null) return; e.preventDefault(); setCursor(isoDay(next)); });
 nowBtn.onclick=()=>setCursor(F.now);
-document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{ F.years=+b.dataset.y; document.querySelectorAll('.seg button').forEach(o=>o.setAttribute('aria-pressed',o===b)); draw(); });
+document.querySelectorAll('#fper button').forEach(b=>b.onclick=()=>{ F.years=+b.dataset.y; document.querySelectorAll('#fper button').forEach(o=>o.setAttribute('aria-pressed',o===b)); draw(); });
 addEventListener('resize',()=>draw());
 
 function method(id,doc,extra){
@@ -521,17 +618,18 @@ function method(id,doc,extra){
 }
 
 (async()=>{
-  const [ipc,gaz,part]=await Promise.all([load('./data/series/ipc.json'),load('./data/series/gazole.json'),load('./data/participation.json')]);
-  if(!ipc&&!gaz){ document.querySelector('.frise').hidden=true; return; }
-  F.ipc=ipc; F.gaz=gaz; F.marks=(part?.rows||[]).filter(r=>r.perimetre==='national');
+  const [ipc,gaz,eco,part]=await Promise.all([load('./data/series/ipc.json'),load('./data/series/gazole.json'),load('./data/series/ecole.json'),load('./data/participation.json')]);
+  if(!ipc&&!gaz&&!eco){ document.querySelector('.frise').hidden=true; return; }
+  F.ipc=ipc; F.gaz=gaz; F.eco=eco; F.marks=(part?.rows||[]).filter(r=>r.perimetre==='national');
   if(gaz) for(const l of gaz.lignes) l._map=new Map(l.points);
   if(!ipc){ svgI.hidden=true; svgI.previousElementSibling.hidden=true; }
-  if(!gaz){ svgG.hidden=true; svgG.previousElementSibling.hidden=true; }
+  if(!gaz&&!eco){ svgG.hidden=true; svgG.previousElementSibling.hidden=true; }
   const d=new Date(); F.now=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   F.cursor=F.now;
   method('fmeth-ipc',ipc,ipc?ipc.lignes.filter(l=>l.calcul&&COL[l.id]).map(l=>`${l.label} : ${l.calcul}, comparé à « Ensemble hors tabac ». `).join(''):'');
   method('fmeth-gaz',gaz,'La bande montre l\'écart entre les 10 % de stations les moins chères et les 10 % les plus chères. Sur la carte, quand le curseur n\'est pas sur « maintenant », les départements affichent la médiane de la semaine choisie, sur une échelle de couleur fixe pour toute la période. ');
-  legend(); draw();
+  method('fmeth-eco',eco,'');
+  selector(); legend(); draw();
 })();
 })();
 </script>

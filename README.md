@@ -9,6 +9,7 @@ Carte isométrique de la France qui croise trois couches :
 | Comptages de participation | `data/participation.csv` | manuel |
 | Inflation sur un an (frise) : ensemble, alimentation, produits frais, énergie, produits pétroliers, 20 % les plus modestes | INSEE, IPC base 2025 (API SDMX ouverte) | automatique, mensuelle (vérifiée toutes les heures) |
 | Gazole, historique : médiane et 1er–9e décile par jour (frise), médiane par département et par semaine (carte, pilotée par le curseur) | archives annuelles prix-carburants (donnees.roulez-eco.fr), depuis 2022 | automatique, une fois par jour |
+| École : IPS des collèges (carte, rentrées 2023 et suivantes) et écart d'IPS privé − public par département ; effectifs des écoles publiques depuis 2009 (frise) | data.education.gouv.fr (IPS, annuaire, effectifs) | automatique, vérifiée chaque semaine (données annuelles) |
 
 Sans fichier de données, la page affiche des couches de démonstration clairement signalées.
 

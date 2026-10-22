@@ -38,6 +38,14 @@ jobs:
           if [ "$(python -c 'import json;print(json.load(open("data/series/gazole.json"))["updated"][:10])' 2>/dev/null)" != "$(date -u +%F)" ]; then
             python scripts/fetch_carburants_historique.py || echo "Archive carburants indisponible, on garde l'ancien historique"
           fi
+      # Données annuelles (~30 Mo à télécharger) : une vérification par semaine, date notée dans data/verifications.json
+      - name: École (IPS, effectifs)
+        run: |
+          last=$(python -c 'import json;print(json.load(open("data/verifications.json")).get("ecole",""))' 2>/dev/null)
+          if [ "$last" \< "$(date -u -d '7 days ago' +%F)" ]; then
+            python scripts/fetch_ecole.py && python -c 'import json,datetime,pathlib;p=pathlib.Path("data/verifications.json");d=json.loads(p.read_text()) if p.exists() else {};d["ecole"]=datetime.date.today().isoformat();p.write_text(json.dumps(d))' \
+              || echo "data.education.gouv.fr indisponible, on garde les anciens fichiers"
+          fi
       # Une requête par run : le cron GitHub est trop irrégulier pour viser « une fois par heure »
       - name: Prix carburants
         run: python scripts/fetch_carburants.py || echo "API carburants indisponible, on garde l'ancien fichier"
