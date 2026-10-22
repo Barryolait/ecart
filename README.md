@@ -10,6 +10,7 @@ Carte isométrique de la France qui croise trois couches :
 | Inflation sur un an (frise) : ensemble, alimentation, produits frais, énergie, produits pétroliers, 20 % les plus modestes | INSEE, IPC base 2025 (API SDMX ouverte) | automatique, mensuelle (vérifiée toutes les heures) |
 | Gazole, historique : médiane et 1er–9e décile par jour (frise), médiane par département et par semaine (carte, pilotée par le curseur) | archives annuelles prix-carburants (donnees.roulez-eco.fr), depuis 2022 | automatique, une fois par jour |
 | École : IPS des collèges (carte, rentrées 2023 et suivantes) et écart d'IPS privé − public par département ; effectifs des écoles publiques depuis 2009 (frise) | data.education.gouv.fr (IPS, annuaire, effectifs) | automatique, vérifiée chaque semaine (données annuelles) |
+| Concours enseignants : postes offerts, admis, postes non pourvus annoncés (frise + tableau des sources) | `data/concours.csv` : data.education.gouv.fr (2016-2020), communiqués du ministère (2024-2026) | manuel, une fois par an (juillet) |
 
 Sans fichier de données, la page affiche des couches de démonstration clairement signalées.
 
@@ -19,6 +20,12 @@ Sans fichier de données, la page affiche des couches de démonstration claireme
 2. *Settings → Pages* : source = branche `main`, dossier `/ (root)`.
 3. *Actions* : lance une fois « Mise à jour des données » (bouton *Run workflow*).
 4. Le site est en ligne sur `https://<ton-pseudo>.github.io/<depot>/`.
+
+## Ajouter des résultats de concours
+
+Une ligne par chiffre publié dans `data/concours.csv`, avec le périmètre exact de la source (tous concours, concours externes,
+sessions supplémentaires incluses ou non) et son lien. La colonne `serie` ne regroupe que des lignes de même périmètre
+(`pe_externe`, `pe_tous`, `second_externe`, `second_tous`) ; laisse-la vide pour un chiffre qui ne se compare à aucun autre.
 
 ## Ajouter un comptage
 

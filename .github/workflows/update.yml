@@ -5,7 +5,7 @@ on:
     - cron: "*/15 * * * *"   # GDELT publie toutes les 15 min
   workflow_dispatch:
   push:
-    paths: ["data/participation.csv"]
+    paths: ["data/participation.csv", "data/concours.csv"]
 
 permissions:
   contents: write
@@ -24,6 +24,8 @@ jobs:
           python-version: "3.12"
       - name: Participation (CSV -> JSON)
         run: python scripts/build_participation.py
+      - name: Concours enseignants (CSV -> JSON)
+        run: python scripts/build_concours.py
       - name: Événements GDELT
         run: python scripts/fetch_events.py || echo "GDELT indisponible, on garde l'ancien fichier"
       # Mensuel : une requête par heure suffit, le fichier n'est réécrit que si l'INSEE publie

@@ -102,6 +102,12 @@ dd{margin:0;text-align:right}
 .frise details{color:var(--dim);font-size:10.5px}
 .frise summary{cursor:pointer;letter-spacing:.1em;text-transform:uppercase}
 .frise details p{margin:6px 0 0}
+.ftable{overflow-x:auto;margin-top:6px}
+.ftable table{border-collapse:collapse;font-size:10px;min-width:720px}
+.ftable th,.ftable td{border-top:1px solid var(--line);padding:3px 6px;text-align:left;vertical-align:top}
+.ftable th{color:var(--dim);font-weight:500;text-transform:uppercase;letter-spacing:.06em}
+.ftable td.n{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
+.ftable a{color:var(--cyan)}
 .deck-tooltip{font:12px/1.4 var(--f-mono)!important}
 @media (prefers-reduced-motion:reduce){.ticker div{animation:none;padding-left:16px}.chip.live::before{animation:none}}
 @media (max-width:760px){
@@ -187,7 +193,7 @@ dd{margin:0;text-align:right}
       <div class="fhead"><div class="seg" id="fsel" role="group" aria-label="Indicateur du second graphe"></div><h3 id="fsel-t"></h3></div>
       <svg id="fsvg-gaz" class="fsvg small" aria-hidden="true"></svg>
     </div>
-    <details><summary>Méthode, limites, sources</summary><p id="fmeth-ipc"></p><p id="fmeth-gaz"></p><p id="fmeth-eco"></p></details>
+    <details><summary>Méthode, limites, sources</summary><p id="fmeth-ipc"></p><p id="fmeth-gaz"></p><p id="fmeth-eco"></p><div id="fmeth-conc"></div></details>
   </section>
 </main>
 
@@ -424,10 +430,10 @@ const NS='http://www.w3.org/2000/svg', DAY=864e5;
 // Le gazole reprend la teinte des produits pétroliers : même famille.
 const COL={ensemble:'#ffffff',energie:'#ff4a3d',alimentation:'#3ae6ff',q1:'#ffd400',frais:'#5dff9b',petroliers:'#c58bff',gazole:'#c58bff'};
 // École : public cyan / privé jaune, comme le gradient d'IPS de la carte ; les autres indicateurs sont seuls sur leur graphe
-const COL_ECO={ips_public:'#3ae6ff',ips_prive:'#ffd400'};
+const COL_ECO={ips_public:'#3ae6ff',ips_prive:'#ffd400',pe_externe:'#3ae6ff',pe_tous:'#3ae6ff',second_externe:'#ffd400',second_tous:'#ffd400'};
 const FMT_ECO={ips:v=>String(v).replace('.',','),classes:v=>v.toFixed(1).replace('.',','),
-  ecoles:v=>v>=1e4?Math.round(v/1e3)+' k':v.toLocaleString('fr-FR'),eleves:v=>(v/1e6).toFixed(1).replace('.',',')+' M'};
-const STEPS_ECO={ips:[5,10,20,25,50],classes:[.5,1,2,5],ecoles:[1e3,2e3,5e3,1e4],eleves:[1e5,2e5,5e5,1e6]};
+  ecoles:v=>v>=1e4?Math.round(v/1e3)+' k':v.toLocaleString('fr-FR'),eleves:v=>(v/1e6).toFixed(1).replace('.',',')+' M',concours:v=>v.toLocaleString('fr-FR')};
+const STEPS_ECO={ips:[5,10,20,25,50],classes:[.5,1,2,5],ecoles:[1e3,2e3,5e3,1e4],eleves:[1e5,2e5,5e5,1e6],concours:[100,200,250,500,1000]};
 const DEFAULT_ON=['ensemble','energie','alimentation','q1'];
 const M={l:46,r:8};  // marges horizontales communes : les deux graphes partagent le même axe x
 const ms=iso=>Date.parse(iso.length===7?iso+'-15':iso);
@@ -440,18 +446,19 @@ const jour=iso=>new Date(ms(iso)).toLocaleDateString('fr-FR',{day:'numeric',mont
 const el=(tag,attrs={},parent)=>{const n=document.createElementNS(NS,tag);for(const k in attrs)n.setAttribute(k,attrs[k]);parent&&parent.appendChild(n);return n;};
 const $=id=>document.getElementById(id);
 const wrap=$('fwrap'), svgI=$('fsvg-ipc'), svgG=$('fsvg-gaz'), leg=$('fleg'), read=$('fread'), nowBtn=$('fnow'), sel=$('fsel'), selT=$('fsel-t');
-const F={ipc:null,gaz:null,eco:null,sel:'gazole',marks:[],years:5,on:new Set(DEFAULT_ON),cursor:null,hover:null,now:null,t0:0,t1:0};
+const F={ipc:null,gaz:null,eco:null,conc:null,sel:'gazole',marks:[],years:5,on:new Set(DEFAULT_ON),cursor:null,hover:null,now:null,t0:0,t1:0};
 window.ECART_FRISE=F;
 
 async function load(path){ try{ const r=await fetch(path,{cache:'no-store'}); if(!r.ok) throw 0; return await r.json(); }catch(e){ return null; } }
 const ipcLines=()=>F.ipc?F.ipc.lignes.filter(l=>COL[l.id]):[];
 const gazLine=id=>F.gaz?.lignes.find(l=>l.id===id);
-const ecoLines=g=>F.eco?F.eco.lignes.filter(l=>l.groupe===g):[];
+const ecoLines=g=>g==='concours'?(F.conc?.lignes||[]):F.eco?F.eco.lignes.filter(l=>l.groupe===g):[];
 
 // Second graphe à indicateur choisi : gazole, ou un des groupes de data/series/ecole.json
 function selector(){
   const opts=[...(F.gaz?[{id:'gazole',btn:'Gazole',titre:'€/L · médiane et 1er–9e décile des stations'}]:[]),
-    ...(F.eco?Object.entries(F.eco.groupes).map(([g,t])=>({id:g,btn:{ips:'IPS collèges',classes:'Élèves/classe',ecoles:'Écoles',eleves:'Élèves'}[g]||g,titre:t})):[])];
+    ...(F.eco?Object.entries(F.eco.groupes).map(([g,t])=>({id:g,btn:{ips:'IPS collèges',classes:'Élèves/classe',ecoles:'Écoles',eleves:'Élèves'}[g]||g,titre:t})):[]),
+    ...(F.conc?[{id:'concours',btn:'Concours',titre:'postes offerts − admis, enseignement public · trait plein : concours externes, tirets : tous concours'}]:[])];
   if(!opts.some(o=>o.id===F.sel)) F.sel=opts[0]?.id;
   sel.textContent='';
   for(const o of opts){ const b=document.createElement('button'); b.type='button'; b.textContent=o.btn; b.setAttribute('aria-pressed',o.id===F.sel);
@@ -477,8 +484,8 @@ function ipcAt(l,iso){ // valeur du mois ; après le dernier mois publié, on ra
   if(p!=null) return {v:p,mois:k};
   const last=l.points.at(-1); return last&&k>last[0]?{v:last[1],mois:last[0],ancien:true}:{v:null};
 }
-function ecoAt(l,iso){ // valeur de la dernière rentrée commencée à cette date
-  let r={v:null}; for(const p of l.points) if(p[0]+'-01'<=iso) r={v:p[1],rentree:p[0].slice(0,4)}; return r;
+function ecoAt(l,iso){ // valeur de la dernière rentrée commencée à cette date (concours : la session de l'année, pas au-delà)
+  let r={v:null}; l.points.forEach((p,i)=>{ if(p[0]+'-01'<=iso&&(!l.details||ms(iso)-ms(p[0]+'-01')<365*DAY)) r={v:p[1],rentree:p[0].slice(0,4),d:l.details?.[i]}; }); return r;
 }
 function gazAt(id,iso){ // valeur du jour, ou la plus récente des 3 jours précédents (l'archive a un jour de retard)
   const l=gazLine(id); if(!l) return {v:null};
@@ -525,6 +532,7 @@ function chart(svg,{series,band,fmt,steps,zero,xlabels,dots}){
     if(A.length&&B.length) el('path',{d:'M'+A.map(p=>x(ms(p[0])).toFixed(1)+' '+y(p[1]).toFixed(1)).join('L')+'L'+B.reverse().map(p=>x(ms(p[0])).toFixed(1)+' '+y(p[1]).toFixed(1)).join('L')+'Z',
       fill:band.color,opacity:.16,stroke:'none'},svg); }
   for(const s of series){ el('path',{d:path(s.points),fill:'none',stroke:s.color,'stroke-width':s.width||1.6,'stroke-linejoin':'round'},svg);
+    if(s.dash) svg.lastChild.setAttribute('stroke-dasharray','4 3');
     if(dots) for(const p of s.points) if(inDom(p)) el('circle',{cx:x(ms(p[0])),cy:y(p[1]),r:2.5,fill:s.color},svg); }  // séries annuelles : un point par rentrée
   const g=el('g',{},svg);  // calque du curseur, redessiné seul
   return {svg,x,y,g,H,m};
@@ -543,7 +551,7 @@ function draw(){
   }
   if(F.sel&&F.sel!=='gazole'){
     const ls=ecoLines(F.sel);
-    charts.push({kind:'eco',...chart(svgG,{series:ls.map(l=>({id:l.id,points:l.points,color:COL_ECO[l.id]||'#ffffff',width:1.8})),
+    charts.push({kind:'eco',...chart(svgG,{series:ls.map(l=>({id:l.id,points:l.points,color:COL_ECO[l.id]||'#ffffff',width:1.8,dash:l.id.endsWith('_tous')})),
       fmt:FMT_ECO[F.sel]||String,steps:STEPS_ECO[F.sel]||[1,2,5,10],zero:false,xlabels:true,dots:true}),lines:ls});
   } else if(F.gaz){
     const med=gazLine('mediane'), d1=gazLine('d1'), d9=gazLine('d9'), band=d1&&d9?Object.assign([d1,d9],{color:COL.gazole}):null;
@@ -577,8 +585,10 @@ function readout(iso){
   for(const l of ipcLines()){ if(!F.on.has(l.id)) continue; const r=ipcAt(l,iso);
     item(COL[l.id],pct(r.v),l.label+(r.ancien?` (${mois(r.mois)})`:'')); }
   if(F.sel&&F.sel!=='gazole') for(const l of ecoLines(F.sel)){ const r=ecoAt(l,iso);
+    if(F.sel==='concours'){ if(r.v!=null) item(COL_ECO[l.id],r.v.toLocaleString('fr-FR'),`postes − admis · ${l.label} · session ${r.rentree}`+(r.d?.annonce!=null?` · ${r.d.annonce} non pourvus annoncés`:'')); continue; }
     item(COL_ECO[l.id]||'#ffffff',r.v==null?'—':(F.sel==='ips'||F.sel==='classes'?FMT_ECO[F.sel](r.v):r.v.toLocaleString('fr-FR')),
       l.label+(r.rentree?` (rentrée ${r.rentree})`:F.sel==='ips'?' (série à partir de 2023)':'')); }
+  if(F.sel==='concours'&&!ecoLines('concours').some(l=>ecoAt(l,iso).v!=null)) item('var(--dim)','—','concours : pas de résultat publié en données ouvertes pour cette année');
   const mk=F.marks.find(m=>Math.abs(ms(m.date)-ms(iso))<=3*DAY);
   if(mk){ const s=document.createElement('span'); s.style.color='var(--signal)';
     s.textContent=`▲ ${mk.date.split('-').reverse().join('.')} : ${mk.interieur?mk.interieur.toLocaleString('fr-FR'):'—'} (Intérieur) – ${mk.organisateurs?mk.organisateurs.toLocaleString('fr-FR'):'—'} (organisateurs)`; read.appendChild(s); }
@@ -609,6 +619,9 @@ addEventListener('resize',()=>draw());
 
 function method(id,doc,extra){
   const p=$(id); if(!doc){ p.hidden=true; return; }
+  method_into(p,doc,extra);
+}
+function method_into(p,doc,extra){
   const a=(href,txt)=>{ const n=document.createElement('a'); n.href=href; n.target='_blank'; n.rel='noopener'; n.textContent=txt; n.style.color='var(--cyan)'; return n; };
   const t=document.createElement('b'); t.textContent=doc.titre+' — '; t.style.color='var(--ink)'; t.style.fontWeight='500';
   p.append(t,`${doc.methode} ${extra||''}Limites : ${doc.limites} Portée : ${doc.portee}. Source : `,a(doc.source.url,doc.source.label));
@@ -618,9 +631,9 @@ function method(id,doc,extra){
 }
 
 (async()=>{
-  const [ipc,gaz,eco,part]=await Promise.all([load('./data/series/ipc.json'),load('./data/series/gazole.json'),load('./data/series/ecole.json'),load('./data/participation.json')]);
+  const [ipc,gaz,eco,conc,part]=await Promise.all([load('./data/series/ipc.json'),load('./data/series/gazole.json'),load('./data/series/ecole.json'),load('./data/series/concours.json'),load('./data/participation.json')]);
   if(!ipc&&!gaz&&!eco){ document.querySelector('.frise').hidden=true; return; }
-  F.ipc=ipc; F.gaz=gaz; F.eco=eco; F.marks=(part?.rows||[]).filter(r=>r.perimetre==='national');
+  F.ipc=ipc; F.gaz=gaz; F.eco=eco; F.conc=conc; F.marks=(part?.rows||[]).filter(r=>r.perimetre==='national');
   if(gaz) for(const l of gaz.lignes) l._map=new Map(l.points);
   if(!ipc){ svgI.hidden=true; svgI.previousElementSibling.hidden=true; }
   if(!gaz&&!eco){ svgG.hidden=true; svgG.previousElementSibling.hidden=true; }
@@ -629,6 +642,21 @@ function method(id,doc,extra){
   method('fmeth-ipc',ipc,ipc?ipc.lignes.filter(l=>l.calcul&&COL[l.id]).map(l=>`${l.label} : ${l.calcul}, comparé à « Ensemble hors tabac ». `).join(''):'');
   method('fmeth-gaz',gaz,'La bande montre l\'écart entre les 10 % de stations les moins chères et les 10 % les plus chères. Sur la carte, quand le curseur n\'est pas sur « maintenant », les départements affichent la médiane de la semaine choisie, sur une échelle de couleur fixe pour toute la période. ');
   method('fmeth-eco',eco,'');
+  if(conc){ // tableau complet des chiffres annoncés : chaque ligne avec son périmètre et sa source
+    const box=$('fmeth-conc'), p=document.createElement('p'); box.appendChild(p); method_into(p,conc);
+    const wrapT=document.createElement('div'); wrapT.className='ftable'; const t=document.createElement('table');
+    const cols=['Session','Degré','Secteur','Périmètre','Postes','Admis','Postes − admis','Non pourvus annoncés','Taux pourvus annoncé','Source','Note'];
+    const tr=t.insertRow(); for(const c of cols){ const th=document.createElement('th'); th.textContent=c; tr.appendChild(th); }
+    for(const r of conc.tableau){ const row=t.insertRow();
+      const cell=(v,n)=>{ const td=row.insertCell(); td.textContent=v??'—'; if(n) td.className='n'; return td; };
+      cell(r.session); cell(r.degre); cell(r.secteur); cell(r.perimetre);
+      cell(r.postes?.toLocaleString('fr-FR'),1); cell(r.admis?.toLocaleString('fr-FR'),1);
+      cell(r.postes!=null&&r.admis!=null?(r.postes-r.admis).toLocaleString('fr-FR'):null,1);
+      cell(r.non_pourvus_annonces?.toLocaleString('fr-FR'),1); cell(r.taux_pourvus_annonce!=null?String(r.taux_pourvus_annonce).replace('.',',')+' %':null,1);
+      const td=row.insertCell(), a=document.createElement('a'); a.href=r.source_url; a.target='_blank'; a.rel='noopener'; a.textContent=r.source_label; td.appendChild(a);
+      cell(r.note||''); }
+    wrapT.appendChild(t); box.appendChild(wrapT);
+  }
   selector(); legend(); draw();
 })();
 })();
